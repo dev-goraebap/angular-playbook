@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "frontend-playbook": {
+    "angular-playbook": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -64,10 +64,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend-playbook:build:production"
+              "buildTarget": "angular-playbook:build:production"
             },
             "development": {
-              "buildTarget": "frontend-playbook:build:development"
+              "buildTarget": "angular-playbook:build:development"
             }
           },
           "defaultConfiguration": "development"
