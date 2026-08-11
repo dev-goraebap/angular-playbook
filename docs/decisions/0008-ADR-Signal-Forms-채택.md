@@ -53,12 +53,15 @@ Angular 22에서 `@angular/forms/signals` 진입점이 제공됩니다. 확인 �
 감수하는 사항은 다음과 같습니다.
 
 - **새 API라 사례와 참고 자료가 적습니다.** 문제 상황에서 검색으로 해결하기 어려울 수 있습니다.
-- **`ControlValueAccessor` 기반 컴포넌트와의 연결에 compat 계층이 필요할 수 있습니다.** Spartan helm의 입력 컴포넌트가 어느 방식인지 미확인이며, compat이 필요하면 입력 컴포넌트마다 어댑터가 생깁니다. 이 경우 본 ADR의 결과 절을 개정합니다.
+- **기존 Reactive Forms 코드와의 경계가 필요할 수 있습니다.** `ControlValueAccessor` 기반 서드파티 컴포넌트를 쓰게 되면 `signals/compat` 계층을 거칩니다. Spartan helm은 해당하지 않습니다.
 - **기존 Reactive Forms 코드가 있는 프로젝트는 혼재 상태를 거칩니다.** 본 표준은 신규 사용만 금지하며 일괄 전환을 요구하지 않습니다.
+
+## 개정
+
+- 2026-08-11: **Spartan helm 입력 컴포넌트가 Signal Forms와 직접 연결됨을 확인했습니다.** compat 계층이 필요하지 않습니다. 컨트롤은 `[formField]`로, `<form>`은 `[formRoot]`로 바인딩하며 오류는 필드의 `errors()` 시그널에서 읽습니다. 결과 절의 해당 항목을 완화했습니다. 결정 자체는 바뀌지 않으므로 신규 ADR을 발행하지 않습니다.
 
 ## 확인이 필요한 항목
 
 | 항목 | 확인할 내용 |
 | :--- | :--- |
-| Spartan helm 입력 컴포넌트 | Signal Forms와 직접 연결되는지, compat이 필요한지 |
 | `validateHttp`의 요청 취소 | 값이 빠르게 바뀔 때 이전 요청이 취소되는지 |
