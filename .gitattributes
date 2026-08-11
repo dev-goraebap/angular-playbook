@@ -1,0 +1,29 @@
+# 이 저장소의 줄바꿈 정책 (형상 항목)
+# 모든 텍스트 파일은 저장소와 체크아웃 모두 LF. 개인 core.autocrlf 설정보다 이 선언이 우선한다.
+* text=auto eol=lf
+
+# Windows 배치 파일만 예외 — cmd 는 CRLF 를 기대한다
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 바이너리는 변환 금지
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.webp -text
+*.avif -text
+*.ico -text
+*.pdf -text
+*.zip -text
+*.woff -text
+*.woff2 -text
+*.ttf -text
+*.otf -text
+
+# 잠금 파일은 사람이 리뷰하지 않는다 — 차이 표시를 접는다
+package-lock.json linguist-generated=true
+
+# OpenAPI 생성 타입은 linguist-generated 로 표시하지 않는다.
+# 계약 변경이 PR 차이에 드러나는 것이 생성물을 커밋하는 이유이므로
+# 차이를 접으면 그 이유가 사라진다. docs/references/API-계약-소비.md §1.1 참조.

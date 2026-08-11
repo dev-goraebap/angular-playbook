@@ -1,10 +1,20 @@
 {
   "version": 1,
   "skills": {
+    "angular-developer": {
+      "source": "angular/skills",
+      "sourceType": "github",
+      "computedHash": "390535a21ca293acbef16e588cfd77f954b0f0eae23d45477b47b0b0ce00eb47"
+    },
     "feature-sliced-design": {
       "source": "feature-sliced/skills",
       "sourceType": "github",
       "computedHash": "f14c4d8f092ef8a6e9e0a2e5937a56884b9cdbd9b1f49c0618fad513d4a59dc8"
+    },
+    "spartan": {
+      "source": "spartan-ng/spartan",
+      "sourceType": "github",
+      "computedHash": "0959668ac0c5d8e39a97fb43c5a8462e187501817adfeae6ff29bbc3a4dde8ac"
     }
   }
 }
