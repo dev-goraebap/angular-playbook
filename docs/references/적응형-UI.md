@@ -49,7 +49,7 @@ export function injectInteractionMode(): Signal<'pointer' | 'touch'> {
   );
   return computed(() => {
     const s = state();
-    if (!s) return 'pointer';                     // 서버 및 초기값
+    if (!s) return 'pointer';                     // 방어용. §3.2 참조
     return s.breakpoints['(pointer: coarse)'] && s.breakpoints['(hover: none)']
       ? 'touch'
       : 'pointer';
@@ -63,7 +63,12 @@ export function injectInteractionMode(): Signal<'pointer' | 'touch'> {
 
 ### 3.2 서버 기본값
 
-서버에는 포인터도 호버도 없으므로 `pointer`를 기본값으로 반환합니다. 이 값이 정확할 수 없다는 점이 §6의 제약으로 이어집니다.
+서버에는 포인터도 호버도 없으므로 판정 결과는 항상 `pointer`입니다.
+
+이 값이 `initialValue`에서 오는 것이 **아니라는 점**이 중요합니다. CDK는 비브라우저 환경에서 `MediaMatcher`를 `noopMatchMedia`로 대체하며, 이 구현은 모든 쿼리에 `matches: false`를 담은 결과를 구독 즉시 동기로 방출합니다. 따라서 서버에서도 `state()`는 null이 아닌 실제 상태 객체를 갖고, 두 1차 축이 모두 false이므로 `pointer`로 판정됩니다. 위 코드의 null 분기는 방어용이며 서버 렌더 경로에서 도달하지 않습니다.
+
+> **주의: 서버의 오판은 예외로 드러나지 않습니다**
+> 예외가 발생한다면 정적 생성 경로에서 적응형 컴포넌트를 쓴 실수가 빌드 실패로 잡힙니다. 실제로는 조용히 `pointer`가 반환되므로 터치 기기에서 열었을 때만 표현이 교체되며 화면이 깜빡입니다. 이 침묵이 §6의 제약을 코드 리뷰로 확인해야 하는 이유입니다.
 
 ## 4. 구현 패턴
 
@@ -93,6 +98,16 @@ const strategy = mode() === 'touch'
   ? overlay.position().global().bottom('0').centerHorizontally()
   : overlay.position().flexibleConnectedTo(trigger).withPositions([...]);
 ```
+
+brain이 이 교체를 허용합니다. `BrnOverlay`가 `positionStrategy` 입력을 노출하며, 값이 주어지면 brain의 기본 전략(연결 위치 또는 화면 중앙) 대신 그것을 사용합니다. 적용 범위에 따라 세 가지 수단이 있습니다.
+
+| 수단 | 적용 범위 | 사용 시점 |
+| :--- | :--- | :--- |
+| `[positionStrategy]` 입력 | 해당 인스턴스 | 컴포넌트가 모드에 따라 전략을 바꿀 때 |
+| `provideBrnOverlayDefaultOptions()` | 주입 범위 전체 | 앱 전역 기본값을 바꿀 때 |
+| `[attachPositions]` 입력 | 해당 인스턴스 | 전략은 유지하고 연결 위치 후보만 조정할 때 |
+
+전략을 바꾼 뒤 위치를 다시 계산해야 하면 `updatePosition()`을 호출합니다.
 
 한계는 바텀시트 고유 제스처(드래그로 닫기, 스냅 포인트)와 백드롭 동작이 빠진다는 점입니다. 그 수준이 필요하면 패턴 B로 올립니다.
 
@@ -174,8 +189,8 @@ Vitest에서 `BreakpointObserver`를 대체 구현으로 주입해 두 경우를
 
 | 항목 | 확인할 내용 | 영향 |
 | :--- | :--- | :--- |
-| **brain의 오버레이 확장점** | `positionStrategy` 교체를 허용하는지 | 불가하면 패턴 A를 사용할 수 없고 전부 B가 됩니다 |
-| **brain의 date picker** | 키보드 조작과 ARIA 제공 범위 | 부족하면 직접 구현 부담이 커집니다 |
-| **`BreakpointObserver`의 서버 동작** | 서버에서 예외 없이 초기값을 반환하는지 | 예외 발생 시 플랫폼 분기를 추가합니다 |
+| **helm의 입력 전달** | 복사된 helm 컴포넌트가 `positionStrategy`를 brain으로 전달하는지 | 전달하지 않으면 helm 사본에 입력을 추가합니다 |
 | **`@defer`와 컨텐츠 프로젝션** | 표현 컴포넌트에 `ng-content` 전달 시 제약 | 패턴 C의 적용 범위 |
 | **가상 키보드 대응** | `env(keyboard-inset-height)`의 지원 범위 | 바텀시트 입력 화면의 구현 방식 |
+
+brain의 오버레이 확장점, 캘린더의 키보드와 ARIA 범위, `BreakpointObserver`의 서버 동작은 확인을 마쳤습니다. 결과는 [개발 환경](개발-환경.md) §7이 원본입니다.
