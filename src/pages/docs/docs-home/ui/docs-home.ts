@@ -1,6 +1,6 @@
 import { Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HlmCard, HlmCardDescription, HlmCardHeader, HlmCardTitle } from '@/shared/ui';
+import { HlmCard, HlmCardDescription, HlmCardHeader, HlmCardTitle } from '@/shared/ui/card';
 import { DOC_SECTIONS, DOC_SUMMARIES, type DocSection, type DocSummary } from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
 

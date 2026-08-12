@@ -109,6 +109,15 @@ html {
   * {
     @apply border-border outline-ring/50;
   }
+  /*
+   * 내부 스크롤 영역의 스크롤바를 얇게 만듭니다. 문서 스크롤바는 브라우저 기본을 유지합니다.
+   * scroll-area 컴포넌트를 쓰지 않는 이유는 표준 속성 두 줄로 같은 결과가 나오고
+   * 번들이 늘지 않기 때문입니다.
+   */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
   body {
     @apply bg-background text-foreground font-sans;
   }

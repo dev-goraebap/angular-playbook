@@ -6,7 +6,8 @@
       "@/shared/ui/button": ["./src/shared/ui/button/src/index.ts"],
       "@/shared/ui/utils": ["./src/shared/ui/utils/src/index.ts"],
       "@/shared/ui/card": ["./src/shared/ui/card/src/index.ts"],
-      "@/shared/ui/spinner": ["./src/shared/ui/spinner/src/index.ts"]
+      "@/shared/ui/spinner": ["./src/shared/ui/spinner/src/index.ts"],
+      "@/shared/ui/sheet": ["./src/shared/ui/sheet/src/index.ts"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

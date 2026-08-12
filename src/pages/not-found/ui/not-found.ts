@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HlmButton } from '@/shared/ui';
+import { HlmButton } from '@/shared/ui/button';
 import { ROUTES } from '@/shared/config';
 
 /**

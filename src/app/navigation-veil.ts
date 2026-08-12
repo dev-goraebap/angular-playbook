@@ -9,7 +9,7 @@ import {
   Router,
 } from '@angular/router';
 import { filter } from 'rxjs';
-import { HlmSpinner } from '@/shared/ui';
+import { HlmSpinner } from '@/shared/ui/spinner';
 
 /** 이 시간 안에 전환이 끝나면 베일을 띄우지 않습니다. */
 const WAIT_DELAY_MS = 200;

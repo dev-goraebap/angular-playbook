@@ -78,6 +78,23 @@ module.exports = tseslint.config(
               group: ['../../*'],
               message: '계층을 넘는 상대 경로입니다. "@/<layer>/..." 별칭을 사용하십시오.',
             },
+            // Steiger 의 no-public-api-sidestep 을 대신합니다.
+            // 그 규칙은 임포트하는 파일에서 발화해 경로 단위로 좁힐 수 없어 해제했습니다.
+            // 근거는 steiger.config.ts 의 주석과 개발-환경.md §7 에 있습니다.
+            {
+              group: ['@/pages/**/ui/**', '@/pages/**/api/**', '@/pages/**/model/**',
+                      '@/pages/**/lib/**', '@/pages/**/config/**',
+                      '@/features/**/ui/**', '@/features/**/api/**', '@/features/**/model/**',
+                      '@/features/**/lib/**', '@/features/**/config/**',
+                      '@/entities/**/ui/**', '@/entities/**/api/**', '@/entities/**/model/**',
+                      '@/entities/**/lib/**', '@/entities/**/config/**'],
+              message: '슬라이스 내부 파일입니다. 슬라이스의 공개 API(index.ts)를 경유하십시오.',
+            },
+            {
+              group: ['@/shared/*/*/**'],
+              message:
+                'shared 세그먼트의 내부 파일입니다. 세그먼트 또는 컴포넌트 진입점만 임포트하십시오.',
+            },
           ],
         },
       ],
@@ -103,6 +120,8 @@ module.exports = tseslint.config(
     rules: {
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
+      // aria-label 처럼 표준 속성명을 그대로 받으려면 별칭이 필요합니다.
+      '@angular-eslint/no-input-rename': 'off',
       'no-restricted-imports': [
         'error',
         {

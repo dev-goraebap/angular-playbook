@@ -34,4 +34,16 @@ export default defineConfig([
       'fsd/no-reserved-folder-names': 'off',
     },
   },
+
+  // 사용처가 @/shared/ui/<컴포넌트> 를 임포트하는 것을 이 규칙이 공개 API 우회로 판정합니다.
+  // 실제로는 우회가 아니며 tsconfig 가 그 경로를 컴포넌트의 index.ts 로 매핑합니다.
+  // 세그먼트 배럴을 두면 @defer 가 의존성을 분리하지 못해 초기 번들이 217kB 늘어납니다(개발-환경 §7).
+  //
+  // 규칙은 임포트하는 파일에서 발화하므로 경로 단위로 좁힐 수 없어 전역으로 해제하고,
+  // 슬라이스 내부 파일 직접 임포트 금지는 eslint.config.js 의 no-restricted-imports 가 대신합니다.
+  {
+    rules: {
+      'fsd/no-public-api-sidestep': 'off',
+    },
+  },
 ]);

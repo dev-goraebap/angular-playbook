@@ -5,6 +5,7 @@ import {
   withInMemoryScrolling,
 } from '@angular/router';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { provideSpartanHlm } from '@/shared/ui/utils';
 
 import { routes } from './app.routes';
 
@@ -19,5 +20,7 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
     ),
     provideClientHydration(withEventReplay()),
+    // CDK 오버레이가 Angular 21 의 popover 동작을 쓰면 fixed 요소 위로 올라가 쌓임 순서가 어긋납니다.
+    provideSpartanHlm(),
   ],
 };
