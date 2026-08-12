@@ -4,7 +4,13 @@
 @import 'tailwindcss/utilities.css';
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
-/* You can add global styles to this file, and also import other style files */
+/*
+ * 화면마다 스크롤 유무가 달라 콘텐츠 폭이 변하면 전환 시 레이아웃이 좌우로 흔들립니다.
+ * 근거는 docs/references/레이아웃.md §4.1 에 있습니다.
+ */
+html {
+  scrollbar-gutter: stable;
+}
 
 :root {
   color-scheme: light;

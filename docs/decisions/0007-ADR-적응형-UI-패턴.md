@@ -1,3 +1,10 @@
+---
+slug: adr-0007-adaptive-ui
+title: 'ADR-0007: 적응형 UI 패턴'
+description: '적응형 판정 축과 구현 패턴을 고정한 결정'
+order: 7
+---
+
 # ADR-0007: 적응형 UI의 판정 축과 구현 패턴을 고정하고 네이티브 위임을 기각한다
 
 ## 상태

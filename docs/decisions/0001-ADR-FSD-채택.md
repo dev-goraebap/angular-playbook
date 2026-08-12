@@ -1,3 +1,10 @@
+---
+slug: adr-0001-fsd
+title: 'ADR-0001: Feature-Sliced Design 채택'
+description: '모듈 분할 방법론으로 FSD v2.1 을 채택한 결정'
+order: 1
+---
+
 # ADR-0001: 모듈 분할 방법론으로 Feature-Sliced Design v2.1 채택
 
 ## 상태

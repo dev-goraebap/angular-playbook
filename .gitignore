@@ -45,3 +45,6 @@ Thumbs.db
 
 .claude/*
 !.claude/CLAUDE.md
+
+# 문서 사이트 생성물. scripts/build-docs.mjs 가 만들며 원본은 docs/ 입니다.
+/src/shared/markdown/generated

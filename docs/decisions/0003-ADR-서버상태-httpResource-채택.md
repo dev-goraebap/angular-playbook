@@ -1,3 +1,10 @@
+---
+slug: adr-0003-http-resource
+title: 'ADR-0003: 서버 상태 조회 수단'
+description: 'httpResource 채택과 TanStack Query 유보 결정'
+order: 3
+---
+
 # ADR-0003: 서버 상태 조회 수단으로 내장 httpResource를 채택하고 TanStack Query 도입을 유보한다
 
 ## 상태

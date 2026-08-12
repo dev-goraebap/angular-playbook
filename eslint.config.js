@@ -10,7 +10,12 @@ const angular = require('angular-eslint');
  */
 module.exports = tseslint.config(
   {
-    ignores: ['dist/**', '.angular/**', 'src/shared/api/generated/**'],
+    ignores: [
+      'dist/**',
+      '.angular/**',
+      'src/shared/api/generated/**',
+      'src/shared/markdown/generated/**',
+    ],
   },
 
   // ── TypeScript ────────────────────────────────────────────────────────────

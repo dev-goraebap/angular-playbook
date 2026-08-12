@@ -1,3 +1,10 @@
+---
+slug: adr-0006-helm-editable
+title: 'ADR-0006: helm 컴포넌트 수정 정책'
+description: 'Spartan helm 사본의 자유로운 수정을 허용한 결정'
+order: 6
+---
+
 # ADR-0006: Spartan helm 컴포넌트의 자유로운 수정을 허용한다
 
 ## 상태

@@ -1,3 +1,10 @@
+---
+slug: adr-0002-no-widgets
+title: 'ADR-0002: widgets 계층 미도입'
+description: 'widgets 계층을 사용하지 않기로 한 결정'
+order: 2
+---
+
 # ADR-0002: widgets 계층을 사용하지 않는다
 
 ## 상태
