@@ -1,7 +1,16 @@
-import { Component, ViewEncapsulation, computed, inject, input } from '@angular/core';
+import {
+  Component,
+  ViewEncapsulation,
+  computed,
+  inject,
+  input,
+  viewChild,
+  type ElementRef,
+} from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { injectActiveHeading } from '../lib/active-heading';
+import { injectMermaidDiagrams } from '../lib/mermaid-diagrams';
 import type { DocHeading } from '@/shared/markdown';
 import type { DocArticle } from '../api/doc-article-resolver';
 
@@ -11,12 +20,11 @@ import type { DocArticle } from '../api/doc-article-resolver';
   template: `
     <div class="flex items-start gap-10">
       <article class="min-w-0 flex-1">
-        <header class="border-b border-border pb-6">
-          <h1 class="text-3xl font-semibold tracking-tight">{{ article().summary.title }}</h1>
-          <p class="mt-2 text-muted-foreground">{{ article().summary.description }}</p>
-        </header>
-
-        <div class="doc-body mt-8" [innerHTML]="body()"></div>
+        <!--
+          제목과 도입 문장은 본문이 소유합니다. 프론트매터의 title 과 description 은
+          문서 목록과 메타데이터가 쓰며 화면에 다시 표시하지 않습니다.
+        -->
+        <div #docBody class="doc-body prose" [innerHTML]="body()"></div>
       </article>
 
       @if (article().toc.length > 0) {
@@ -51,9 +59,14 @@ export class DocsArticle {
 
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = computed(() => this.article().toc);
+  private readonly docBody = viewChild<ElementRef<HTMLElement>>('docBody');
 
   /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */
   protected readonly activeHeading = injectActiveHeading(this.toc);
+
+  constructor() {
+    injectMermaidDiagrams(this.docBody, this.article);
+  }
 
   protected linkClass(heading: DocHeading): string {
     const indent = heading.depth === 3 ? 'pl-6' : 'pl-3';

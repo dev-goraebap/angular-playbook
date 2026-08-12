@@ -44,7 +44,9 @@ FSD는 여섯 계층을 정의하며 그중 `widgets`는 "재사용 가능한 UI
 
 FSD 현행 공식 문서 사이트인 [fsd.how](https://fsd.how/)가 `widgets` 계층의 신규 도입을 비권장하며, 사유로 `features`와의 책임 중복을 명시합니다. 공식 FSD 스킬도 같은 입장입니다.
 
-> **주의: 구 문서 사이트는 다르게 기술합니다**
+> [!WARNING]
+> **구 문서 사이트는 다르게 기술합니다**
+>
 > [feature-sliced.design](https://feature-sliced.design/docs/reference/layers)은 `widgets`를 정상 계층으로 기술하며 비권장 문구가 없습니다. v2.1에서 폐기된 것은 `processes` 계층이며 `widgets`가 아닙니다. 두 사이트의 서술이 다르다는 사실을 기록해 두는 이유는, 구 사이트를 근거로 이 결정이 되돌려지는 것을 막기 위함입니다.
 
 본 결정은 출처와 무관하게 **자체 근거**로도 성립합니다. 배치 판정이 갈리는 계층은 1순위 목표를 위반합니다.
