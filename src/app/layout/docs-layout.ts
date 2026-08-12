@@ -73,36 +73,6 @@ interface NavigationGroup {
             <ng-icon name="lucideMenu" />
           </button>
 
-          <!--
-            시트는 좁은 화면에서만 쓰이므로 초기 번들에서 분리합니다.
-            번들 문제를 측정으로 확인한 뒤에만 지연을 적용한다는 규칙은 적응형-UI.md §4.4 입니다.
-            조건은 기기 판정이 아니라 사용자 조작 상태이므로 하이드레이션 불일치가 없습니다.
-          -->
-          @defer (when mobileNavOpen(); prefetch on idle) {
-            <!--
-              스크롤 전략을 기본값 block 에서 바꿉니다. block 은 문서를 고정했다가 닫힐 때
-              저장해 둔 위치로 되돌리는데, 그 복원이 라우터의 위치 초기화를 덮어써서
-              다른 문서로 이동해도 이전 스크롤 위치에 남습니다.
-              레이아웃.md §4.4 가 body 스크롤을 직접 잠그지 말라고 한 것과 같은 문제입니다.
-            -->
-            <hlm-sheet
-              side="left"
-              scrollStrategy="reposition"
-              [state]="mobileNavOpen() ? 'open' : 'closed'"
-              (stateChanged)="mobileNavOpen.set($event === 'open')"
-            >
-              <hlm-sheet-content *hlmSheetPortal class="scroll-thin w-80 overflow-y-auto">
-                <div hlmSheetHeader>
-                  <h2 hlmSheetTitle>문서 목록</h2>
-                </div>
-                <!-- 시트 하위 요소는 각자 패딩을 갖습니다. 헤더의 p-4 에 항목의 px-2 를 더해 맞춥니다. -->
-                <div class="px-2 pb-6">
-                  <ng-container [ngTemplateOutlet]="navigation" />
-                </div>
-              </hlm-sheet-content>
-            </hlm-sheet>
-          }
-
           <a [routerLink]="routes.docsHome()" class="font-semibold tracking-tight">
             Angular Playbook
           </a>
@@ -128,6 +98,38 @@ interface NavigationGroup {
         </div>
       </div>
     </div>
+
+    <!--
+      시트는 좁은 화면에서만 쓰이므로 초기 번들에서 분리합니다.
+      번들 문제를 측정으로 확인한 뒤에만 지연을 적용한다는 규칙은 적응형-UI.md §4.4 입니다.
+      조건은 기기 판정이 아니라 사용자 조작 상태이므로 하이드레이션 불일치가 없습니다.
+
+      헤더의 flex 컨테이너 밖에 둡니다. 내용은 포털로 body 에 렌더되지만 <hlm-sheet> 호스트는
+      원래 자리에 남아 flex 아이템으로 계산되며, 그러면 gap 이 하나 더 생겨 옆 요소가 밀립니다.
+    -->
+    @defer (when mobileNavOpen(); prefetch on idle) {
+      <!--
+        스크롤 전략을 기본값 block 에서 바꿉니다. block 은 문서를 고정했다가 닫힐 때
+        저장해 둔 위치로 되돌리는데, 그 복원이 라우터의 위치 초기화를 덮어써서
+        다른 문서로 이동해도 이전 스크롤 위치에 남습니다. 레이아웃.md §4.4 참조.
+      -->
+      <hlm-sheet
+        side="left"
+        scrollStrategy="reposition"
+        [state]="mobileNavOpen() ? 'open' : 'closed'"
+        (stateChanged)="mobileNavOpen.set($event === 'open')"
+      >
+        <hlm-sheet-content *hlmSheetPortal class="scroll-thin w-80 overflow-y-auto">
+          <div hlmSheetHeader>
+            <h2 hlmSheetTitle>문서 목록</h2>
+          </div>
+          <!-- 시트 하위 요소는 각자 패딩을 갖습니다. 헤더의 p-4 에 항목의 px-2 를 더해 맞춥니다. -->
+          <div class="px-2 pb-6">
+            <ng-container [ngTemplateOutlet]="navigation" />
+          </div>
+        </hlm-sheet-content>
+      </hlm-sheet>
+    }
 
     <!-- 데스크탑 사이드바와 모바일 시트가 같은 목록을 공유합니다. 레이아웃.md §3 -->
     <ng-template #navigation>
