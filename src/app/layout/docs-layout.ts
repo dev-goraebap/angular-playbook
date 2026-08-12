@@ -15,6 +15,7 @@ import {
 } from '@/shared/ui/sheet';
 import { DOC_SECTIONS, DOC_SUMMARIES, type DocSection, type DocSummary } from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
+import { ThemeToggle } from '../theme-toggle';
 
 interface NavigationGroup {
   readonly section: DocSection;
@@ -47,6 +48,7 @@ interface NavigationGroup {
     HlmSheetContent,
     HlmSheetHeader,
     HlmSheetTitle,
+    ThemeToggle,
   ],
   providers: [provideIcons({ lucideMenu })],
   template: `
@@ -77,8 +79,15 @@ interface NavigationGroup {
             조건은 기기 판정이 아니라 사용자 조작 상태이므로 하이드레이션 불일치가 없습니다.
           -->
           @defer (when mobileNavOpen(); prefetch on idle) {
+            <!--
+              스크롤 전략을 기본값 block 에서 바꿉니다. block 은 문서를 고정했다가 닫힐 때
+              저장해 둔 위치로 되돌리는데, 그 복원이 라우터의 위치 초기화를 덮어써서
+              다른 문서로 이동해도 이전 스크롤 위치에 남습니다.
+              레이아웃.md §4.4 가 body 스크롤을 직접 잠그지 말라고 한 것과 같은 문제입니다.
+            -->
             <hlm-sheet
               side="left"
+              scrollStrategy="reposition"
               [state]="mobileNavOpen() ? 'open' : 'closed'"
               (stateChanged)="mobileNavOpen.set($event === 'open')"
             >
@@ -86,7 +95,10 @@ interface NavigationGroup {
                 <div hlmSheetHeader>
                   <h2 hlmSheetTitle>문서 목록</h2>
                 </div>
-                <ng-container [ngTemplateOutlet]="navigation" />
+                <!-- 시트 하위 요소는 각자 패딩을 갖습니다. 헤더의 p-4 에 항목의 px-2 를 더해 맞춥니다. -->
+                <div class="px-2 pb-6">
+                  <ng-container [ngTemplateOutlet]="navigation" />
+                </div>
               </hlm-sheet-content>
             </hlm-sheet>
           }
@@ -97,6 +109,8 @@ interface NavigationGroup {
           <span class="hidden text-sm text-muted-foreground sm:inline">
             프론트엔드 아키텍처 표준
           </span>
+
+          <app-theme-toggle class="ml-auto" />
         </div>
       </header>
 

@@ -6,6 +6,23 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!--
+      저장된 테마 선택을 첫 페인트 전에 복원합니다. 선택이 없으면 아무 클래스도 붙이지 않고
+      styles.css 의 `color-scheme: light dark` 가 시스템 설정을 따릅니다.
+      하이드레이션 이후에 적용하면 잘못된 모드가 잠시 보이므로 여기에 둡니다.
+    -->
+    <script>
+      (function () {
+        try {
+          var choice = localStorage.getItem('theme');
+          if (choice === 'dark' || choice === 'light') {
+            document.documentElement.classList.add(choice);
+          }
+        } catch (error) {
+          // 저장소 접근이 차단된 환경에서는 시스템 설정을 그대로 씁니다.
+        }
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

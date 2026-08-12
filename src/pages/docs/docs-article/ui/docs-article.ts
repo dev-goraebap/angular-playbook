@@ -1,9 +1,13 @@
 import { Component, ViewEncapsulation, computed, inject, input } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
+import { RouterLink } from '@angular/router';
+import { injectActiveHeading } from '../lib/active-heading';
+import type { DocHeading } from '@/shared/markdown';
 import type { DocArticle } from '../api/doc-article-resolver';
 
 @Component({
   selector: 'app-docs-article',
+  imports: [RouterLink],
   template: `
     <div class="flex items-start gap-10">
       <article class="min-w-0 flex-1">
@@ -22,9 +26,11 @@ import type { DocArticle } from '../api/doc-article-resolver';
             @for (heading of article().toc; track heading.id) {
               <li>
                 <a
-                  [href]="'#' + heading.id"
-                  class="-ml-px block border-l border-transparent py-0.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-                  [class]="heading.depth === 3 ? 'pl-6' : 'pl-3'"
+                  [routerLink]="[]"
+                  [fragment]="heading.id"
+                  replaceUrl="true"
+                  class="-ml-px block border-l py-0.5 text-sm transition-colors hover:text-foreground"
+                  [class]="linkClass(heading)"
                 >
                   {{ heading.text }}
                 </a>
@@ -44,6 +50,18 @@ export class DocsArticle {
   readonly article = input.required<DocArticle>();
 
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly toc = computed(() => this.article().toc);
+
+  /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */
+  protected readonly activeHeading = injectActiveHeading(this.toc);
+
+  protected linkClass(heading: DocHeading): string {
+    const indent = heading.depth === 3 ? 'pl-6' : 'pl-3';
+    const active = this.activeHeading() === heading.id;
+    return active
+      ? `${indent} border-primary font-medium text-foreground`
+      : `${indent} border-transparent text-muted-foreground hover:border-border`;
+  }
 
   /**
    * 절 제목의 `id` 를 유지하기 위해 sanitizer 를 우회합니다.
