@@ -1,5 +1,6 @@
 import { Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { HlmCard, HlmCardDescription, HlmCardHeader, HlmCardTitle } from '@/shared/ui';
 import { DOC_SECTIONS, DOC_SUMMARIES, type DocSection, type DocSummary } from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
 
@@ -11,7 +12,7 @@ interface DocGroup {
 
 @Component({
   selector: 'app-docs-home',
-  imports: [RouterLink],
+  imports: [RouterLink, HlmCard, HlmCardHeader, HlmCardTitle, HlmCardDescription],
   template: `
     <div class="mx-auto max-w-4xl">
       <section class="border-b border-border pb-10">
@@ -29,15 +30,16 @@ interface DocGroup {
           </h2>
           <ul class="mt-4 grid gap-3 sm:grid-cols-2">
             @for (doc of group.documents; track doc.slug) {
-              <li>
+              <li class="h-full">
                 <a
+                  hlmCard
                   [routerLink]="routes.docsArticle(doc.slug)"
-                  class="block h-full rounded-lg border border-border bg-card p-4 text-card-foreground transition-colors hover:border-primary/40 hover:bg-accent"
+                  class="block h-full transition-colors hover:bg-accent"
                 >
-                  <span class="font-medium">{{ doc.title }}</span>
-                  <span class="mt-1 block text-sm text-muted-foreground">
-                    {{ doc.description }}
-                  </span>
+                  <div hlmCardHeader>
+                    <h3 hlmCardTitle>{{ doc.title }}</h3>
+                    <p hlmCardDescription>{{ doc.description }}</p>
+                  </div>
                 </a>
               </li>
             }

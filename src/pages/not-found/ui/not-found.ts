@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { HlmButton } from '@/shared/ui';
 import { ROUTES } from '@/shared/config';
 
 /**
@@ -9,7 +10,7 @@ import { ROUTES } from '@/shared/config';
  */
 @Component({
   selector: 'app-not-found',
-  imports: [RouterLink],
+  imports: [RouterLink, HlmButton],
   template: `
     <main
       class="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background px-6 text-center text-foreground"
@@ -21,12 +22,7 @@ import { ROUTES } from '@/shared/config';
         </p>
       </div>
 
-      <a
-        [routerLink]="routes.docsHome()"
-        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-      >
-        문서 목록으로
-      </a>
+      <a hlmBtn [routerLink]="routes.docsHome()">문서 목록으로</a>
     </main>
   `,
 })

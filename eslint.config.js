@@ -93,6 +93,38 @@ module.exports = tseslint.config(
     },
   },
 
+  // helm 사본은 Spartan 규약을 따릅니다.
+  // 선택자 접두사는 hlm 이며, 이를 app 으로 바꾸면 컴포넌트를 재생성할 때마다 되돌아옵니다.
+  // hlm.ts 의 Injector 는 runInInjectionContext 에 넘기는 용도라 우리 규칙이 막으려는
+  // 동적 토큰 주입(Injector.get)이 아닙니다. 규칙이 입구를 넓게 막고 있어 함께 걸립니다.
+  // 나머지 규칙(XSS 우회, no-console, 폼 수단 제한)은 그대로 적용합니다.
+  {
+    files: ['src/shared/ui/**/*.ts'],
+    rules: {
+      '@angular-eslint/component-selector': 'off',
+      '@angular-eslint/directive-selector': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@angular/forms',
+              importNames: ['FormGroup', 'FormControl', 'FormArray', 'FormBuilder',
+                            'ReactiveFormsModule', 'Validators'],
+              message: 'Signal Forms(@angular/forms/signals)를 사용합니다. ADR-0008 참조.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['../../*'],
+              message: '계층을 넘는 상대 경로입니다. "@/<layer>/..." 별칭을 사용하십시오.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // 전역 프로바이더는 shared 와 app 에서만 선언합니다.
   {
     files: ['src/pages/**/*.ts', 'src/features/**/*.ts', 'src/entities/**/*.ts'],

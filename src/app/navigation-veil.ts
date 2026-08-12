@@ -9,6 +9,7 @@ import {
   Router,
 } from '@angular/router';
 import { filter } from 'rxjs';
+import { HlmSpinner } from '@/shared/ui';
 
 /** 이 시간 안에 전환이 끝나면 베일을 띄우지 않습니다. */
 const WAIT_DELAY_MS = 200;
@@ -30,6 +31,7 @@ function pathOf(url: string): string {
  */
 @Component({
   selector: 'app-navigation-veil',
+  imports: [HlmSpinner],
   template: `
     @if (visible()) {
       <div
@@ -37,7 +39,7 @@ function pathOf(url: string): string {
         role="status"
         aria-live="polite"
       >
-        <span class="text-sm text-muted-foreground">불러오는 중</span>
+        <hlm-spinner aria-label="불러오는 중" />
       </div>
     }
     @if (indicating()) {

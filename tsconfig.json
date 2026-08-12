@@ -1,10 +1,12 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/shared/ui/button": ["./src/shared/ui/button/src/index.ts"],
+      "@/shared/ui/utils": ["./src/shared/ui/utils/src/index.ts"],
+      "@/shared/ui/card": ["./src/shared/ui/card/src/index.ts"],
+      "@/shared/ui/spinner": ["./src/shared/ui/spinner/src/index.ts"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
