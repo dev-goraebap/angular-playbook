@@ -97,7 +97,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/references/개발-환경.md §5.2 입니다.
+ * 규칙의 원본은 docs/references/개발-환경.md 5.2절 입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -241,16 +241,164 @@ function toAnchorId(text) {
   return `section-${slug}`;
 }
 
-/** 문서 간 마크다운 링크를 사이트 경로로 바꿉니다. 대상이 문서가 아니면 원본을 유지합니다. */
+// ── 절 참조 ─────────────────────────────────────────────────────────────────
+
+/**
+ * 문서의 절 번호와 앵커를 짝지읍니다.
+ * 절 제목이 `7.1 app 계층` 처럼 번호로 시작하는 것만 대상입니다.
+ */
+function collectSections(markdown) {
+  const sections = new Map();
+
+  for (const line of markdown.split('\n')) {
+    const heading = line.match(/^#{2,4}\s+(.*)/);
+    if (!heading) continue;
+
+    const title = heading[1].trim();
+    const numbered = title.match(/^(\d+(?:\.\d+)*)[.\s]/);
+    if (!numbered) continue;
+
+    sections.set(numbered[1], toAnchorId(title));
+  }
+
+  return sections;
+}
+
+/** 슬러그별 절 앵커입니다. 다른 문서의 절을 가리키려면 렌더 전에 전부 필요합니다. */
+const sectionsBySlug = new Map(
+  documents.map((doc) => [doc.slug, collectSections(doc.markdown)]),
+);
+
+/**
+ * 자리표시자로 쓰는 문자입니다.
+ * 본문에 나타날 수 없는 값이어야 복원할 때 엉뚱한 자리를 덮지 않습니다.
+ * 소스에는 이스케이프로 적어 파일 자체는 텍스트로 유지합니다.
+ */
+const STASH_MARK = '\u0000';
+
+/**
+ * 걷어낸 구간을 서로 구분하는 번호입니다.
+ * 마커를 공유하면 한쪽의 자리표시자를 다른 쪽이 자기 것으로 읽어 엉뚱한 내용으로 복원합니다.
+ */
+let stashScope = 0;
+
+/** 구간을 잠시 걷어내고 복원 수단을 함께 돌려줍니다. */
+function stashMatches(text, pattern) {
+  const scope = (stashScope += 1);
+  const open = STASH_MARK + scope + ":";
+  const stash = [];
+
+  const masked = text.replace(pattern, (match) => {
+    stash.push(match);
+    return open + (stash.length - 1) + STASH_MARK;
+  });
+
+  const marker = new RegExp(open + '(\\d+)' + STASH_MARK, 'g');
+
+  return {
+    masked,
+    restore: (value) => value.replace(marker, (_, index) => stash[Number(index)]),
+  };
+}
+
+/**
+ * `3.1절` 표기를 해당 절로 가는 링크로 바꿉니다.
+ *
+ * 절 번호는 화면에서 클릭할 수 없으면 목차로 돌아가 눈으로 찾아야 합니다.
+ * 문서 원본에는 번호만 남겨 두고 링크는 여기서 만듭니다.
+ * 세 가지 형태를 처리하며, 번호에 해당하는 절이 없으면 빌드를 멈춥니다.
+ */
+function linkSectionReferences(html, doc) {
+  const own = sectionsBySlug.get(doc.slug);
+
+  // 코드 블록과 인라인 코드 안의 절 표기는 링크로 바꾸지 않습니다. 실제 주석에 등장합니다.
+  const code = stashMatches(html, /<pre[\s\S]*?<\/pre>|<code[\s\S]*?<\/code>/g);
+
+  const anchorOf = (slug, number, context) => {
+    const anchor = sectionsBySlug.get(slug)?.get(number);
+    if (anchor) return anchor;
+
+    throw new Error(
+      doc.path + ' 이 존재하지 않는 절 "' + number + '절" 을 가리킵니다. 문맥: ' + context,
+    );
+  };
+
+  const linked = code.masked
+    // 1) 링크 텍스트 안에 번호가 있는 경우: [아키텍처 9절](...) → 링크에 프래그먼트를 붙입니다.
+    .replace(
+      /<a href="\/docs\/([^"#]+)"([^>]*)>((?:(?!<\/a>)[\s\S])*?)(\d+(?:\.\d+)*)절((?:(?!<\/a>)[\s\S])*?)<\/a>/g,
+      (match, slug, attrs, before, number, after) =>
+        '<a href="/docs/' +
+        slug +
+        '#' +
+        anchorOf(slug, number, match) +
+        '"' +
+        attrs +
+        '>' +
+        before +
+        number +
+        '절' +
+        after +
+        '</a>',
+    )
+    // 2) 링크 바로 뒤에 오는 경우: [개발 환경](...) 7절 → 그 문서의 7절로 보냅니다.
+    .replace(
+      /(<a href="\/docs\/([^"#]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<\/a>)(\s*)(\d+(?:\.\d+)*)절/g,
+      (match, link, slug, gap, number) =>
+        link +
+        gap +
+        '<a href="/docs/' +
+        slug +
+        '#' +
+        anchorOf(slug, number, match) +
+        '">' +
+        number +
+        '절</a>',
+    );
+
+  // 3) 남은 것은 자기 문서의 절입니다. 이미 링크가 된 구간은 다시 감싸지 않습니다.
+  const anchors = stashMatches(linked, /<a[\s\S]*?<\/a>/g);
+
+  const withOwn = anchors.masked.replace(/(\d+(?:\.\d+)*)절/g, (match, number) => {
+    const anchor = own?.get(number);
+    if (!anchor) {
+      throw new Error(doc.path + ' 이 존재하지 않는 절 "' + number + '절" 을 가리킵니다.');
+    }
+    return '<a href="#' + anchor + '">' + number + '절</a>';
+  });
+
+  return code.restore(anchors.restore(withOwn));
+}
+
+/**
+ * 문서 간 마크다운 링크를 사이트 경로로 바꿉니다.
+ *
+ * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
+ * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
+ * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
+ * 규칙의 원본은 docs/references/개발-환경.md 5.4절 입니다.
+ */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;
 
   const [target, fragment] = href.split('#');
-  if (!target.endsWith('.md')) return href;
+
+  if (!target.endsWith('.md')) {
+    throw new Error(
+      `${fromPath} 의 링크 "${href}" 가 문서를 가리키지 않습니다. ` +
+        `사이트에는 해당 경로가 없어 404 가 됩니다. 디렉터리는 링크 없이 언급합니다.`,
+    );
+  }
 
   const resolved = posix.normalize(posix.join(posix.dirname(fromPath), target));
   const slug = slugsByPath.get(resolved);
-  if (!slug) return href;
+
+  if (!slug) {
+    throw new Error(
+      `${fromPath} 의 링크 "${href}" 가 가리키는 문서를 찾을 수 없습니다. ` +
+        `대상: ${resolved}`,
+    );
+  }
 
   return fragment ? `/docs/${slug}#${fragment}` : `/docs/${slug}`;
 }
@@ -307,7 +455,7 @@ function render(doc) {
    * 프론트매터의 title 과 description 은 문서 목록과 메타데이터가 쓰는 짧은 이름이고,
    * 본문의 제목과 첫 문장은 문서 자체의 것입니다. ADR 은 두 값이 의도적으로 다릅니다.
    */
-  return { html: marked.parse(doc.markdown), toc };
+  return { html: linkSectionReferences(marked.parse(doc.markdown), doc), toc };
 }
 
 // ── 출력 ────────────────────────────────────────────────────────────────────

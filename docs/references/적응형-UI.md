@@ -56,7 +56,7 @@ export function injectInteractionMode(): Signal<'pointer' | 'touch'> {
   );
   return computed(() => {
     const s = state();
-    if (!s) return 'pointer';                     // 방어용. §3.2 참조
+    if (!s) return 'pointer';                     // 방어용. 3.2절 참조
     return s.breakpoints['(pointer: coarse)'] && s.breakpoints['(hover: none)']
       ? 'touch'
       : 'pointer';
@@ -77,7 +77,7 @@ export function injectInteractionMode(): Signal<'pointer' | 'touch'> {
 > [!WARNING]
 > **서버의 오판은 예외로 드러나지 않습니다**
 >
-> 예외가 발생한다면 정적 생성 경로에서 적응형 컴포넌트를 쓴 실수가 빌드 실패로 잡힙니다. 실제로는 조용히 `pointer`가 반환되므로 터치 기기에서 열었을 때만 표현이 교체되며 화면이 깜빡입니다. 이 침묵이 §6의 제약을 코드 리뷰로 확인해야 하는 이유입니다.
+> 예외가 발생한다면 정적 생성 경로에서 적응형 컴포넌트를 쓴 실수가 빌드 실패로 잡힙니다. 실제로는 조용히 `pointer`가 반환되므로 터치 기기에서 열었을 때만 표현이 교체되며 화면이 깜빡입니다. 이 침묵이 6절의 제약을 코드 리뷰로 확인해야 하는 이유입니다.
 
 ## 4. 구현 패턴
 
@@ -124,11 +124,18 @@ brain이 이 교체를 허용합니다. `BrnOverlay`가 `positionStrategy` 입�
 
 ```text
 shared/ui/date-picker/
-  date-picker.ts            공개 API. 값과 검증 상태만 소유
-  date-picker-popover.ts    pointer 표현
-  date-picker-sheet.ts      touch 표현
-  index.ts                  date-picker 만 내보냅니다
+├── date-picker.ts
+├── date-picker-popover.ts
+├── date-picker-sheet.ts
+└── index.ts
 ```
+
+| 파일 | 역할 |
+| :--- | :--- |
+| `date-picker.ts` | 공개 API. 값과 검증 상태만 소유합니다 |
+| `date-picker-popover.ts` | pointer 표현 |
+| `date-picker-sheet.ts` | touch 표현 |
+| `index.ts` | `date-picker`만 내보냅니다 |
 
 ```ts
 readonly mode = injectInteractionMode();
@@ -188,7 +195,7 @@ readonly mode = injectInteractionMode();
 | **최소 터치 타겟** | 44 × 44 CSS 픽셀. 시각적 크기가 작아도 터치 영역을 확보합니다 |
 | **인접 타겟 간격** | 8 CSS 픽셀 이상 |
 | **호버 전용 동작 금지** | 호버로만 접근 가능한 기능을 두지 않습니다 |
-| **바텀시트와 가상 키보드** | 키보드가 시트를 가리지 않도록 처리합니다. 수단은 §8 확인 대상 |
+| **바텀시트와 가상 키보드** | 키보드가 시트를 가리지 않도록 처리합니다. 수단은 8절 확인 대상 |
 
 ## 8. 테스트
 
@@ -204,4 +211,4 @@ Vitest에서 `BreakpointObserver`를 대체 구현으로 주입해 두 경우를
 | **`@defer`와 컨텐츠 프로젝션** | 표현 컴포넌트에 `ng-content` 전달 시 제약 | 패턴 C의 적용 범위 |
 | **가상 키보드 대응** | `env(keyboard-inset-height)`의 지원 범위 | 바텀시트 입력 화면의 구현 방식 |
 
-brain의 오버레이 확장점, 캘린더의 키보드와 ARIA 범위, `BreakpointObserver`의 서버 동작은 확인을 마쳤습니다. 결과는 [개발 환경](개발-환경.md) §7이 원본입니다.
+brain의 오버레이 확장점, 캘린더의 키보드와 ARIA 범위, `BreakpointObserver`의 서버 동작은 확인을 마쳤습니다. 결과는 [개발 환경](개발-환경.md) 7절이 원본입니다.
