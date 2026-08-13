@@ -10,7 +10,4 @@ export const ROUTES = {
    * 배열로 돌려줍니다. `routerLink` 에 문자열로 넘기면 슬래시가 인코딩되어 매칭되지 않습니다.
    */
   doc: (slug: string) => ['/', ...slug.split('/')],
-
-  /** 주제 하나에 묶인 글 목록입니다. */
-  tag: (tag: string) => ['/', 'tags', tag],
 } as const;

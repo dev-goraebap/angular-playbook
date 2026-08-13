@@ -28,10 +28,6 @@ export const routes: Routes = [
         runGuardsAndResolvers: 'paramsOrQueryParamsChange',
       },
       {
-        path: 'tags/:tag',
-        loadComponent: () => import('@/pages/blog/tag-posts').then((m) => m.TagPosts),
-      },
-      {
         path: 'about',
         loadComponent: () => import('@/pages/docs/docs-article').then((m) => m.DocsArticle),
         resolve: { article: docArticleResolver },

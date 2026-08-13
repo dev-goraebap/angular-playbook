@@ -9,6 +9,8 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideArrowLeft } from '@ng-icons/lucide';
 import { injectActiveHeading } from '../lib/active-heading';
 import { injectMermaidDiagrams } from '../lib/mermaid-diagrams';
 import type { DocHeading } from '@/shared/markdown';
@@ -17,11 +19,20 @@ import type { DocArticle } from '../api/doc-article-resolver';
 
 @Component({
   selector: 'app-docs-article',
-  imports: [RouterLink],
+  imports: [RouterLink, NgIcon],
+  providers: [provideIcons({ lucideArrowLeft })],
   template: `
     <div class="flex items-start gap-10" [class]="containerClass()">
       <article class="min-w-0 flex-1">
         @if (isReading()) {
+          <a
+            [routerLink]="routes.home()"
+            class="mb-6 inline-flex items-center gap-1.5 text-sm text-foreground-secondary transition-colors hover:text-foreground"
+          >
+            <ng-icon name="lucideArrowLeft" size="16" />
+            전체 글
+          </a>
+
           <!--
             글과 소개는 본문에 제목이 없습니다. 프론트매터가 제목과 표지의 유일한 출처이므로
             화면이 그립니다. 표준 문서는 반대로 본문이 제목을 소유합니다.
@@ -58,7 +69,8 @@ import type { DocArticle } from '../api/doc-article-resolver';
                   <span class="text-border">·</span>
                   @for (tag of summary().tags; track tag) {
                     <a
-                      [routerLink]="routes.tag(tag)"
+                      [routerLink]="routes.home()"
+                      [queryParams]="{ tags: tag }"
                       class="font-medium text-muted-foreground transition-colors hover:text-primary"
                     >
                       #{{ tag }}
@@ -112,7 +124,7 @@ export class DocsArticle {
    * 글은 처음부터 끝까지 읽는 것이 전제라 목차가 읽기를 돕지 않습니다.
    */
   protected readonly showToc = computed(
-    () => !this.isReading() && this.toc().length > 0,
+    () => this.toc().length > 0,
   );
 
   protected readonly routes = ROUTES;
@@ -137,7 +149,7 @@ export class DocsArticle {
 
   /** 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다. */
   protected readonly containerClass = computed(() =>
-    this.isReading() ? 'mx-auto max-w-170 px-4 py-12' : '',
+    this.isReading() ? 'mx-auto max-w-264 px-4 py-12' : '',
   );
 
   /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */

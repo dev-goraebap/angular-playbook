@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ROUTES } from '@/shared/config';
 import { ThemeToggle } from '../theme-toggle';
+import { SiteFooter } from './site-footer';
 
 /**
  * 모든 화면이 공유하는 셸입니다. 상단 바와 테마 전환만 소유합니다.
@@ -14,7 +15,8 @@ import { ThemeToggle } from '../theme-toggle';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle, SiteFooter],
+  host: { class: 'flex min-h-dvh flex-col' },
   template: `
     <a
       href="#main"
@@ -50,7 +52,12 @@ import { ThemeToggle } from '../theme-toggle';
       </nav>
     </header>
 
-    <router-outlet />
+    <!-- 본문이 짧아도 푸터가 화면 하단에 붙도록 남은 높이를 차지합니다. -->
+    <main class="flex-1">
+      <router-outlet />
+    </main>
+
+    <app-site-footer />
   `,
 })
 export class AppShell {

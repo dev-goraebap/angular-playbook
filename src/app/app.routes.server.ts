@@ -28,15 +28,6 @@ export const serverRoutes: ServerRoute[] = [
       })),
   },
   {
-    // 글에 실제로 붙어 있는 태그만 생성합니다. 없는 태그로 들어오면 빈 목록을 보여줍니다.
-    path: 'tags/:tag',
-    renderMode: RenderMode.Prerender,
-    getPrerenderParams: async () => {
-      const tags = new Set(DOC_SUMMARIES.flatMap((doc) => doc.tags ?? []));
-      return [...tags].map((tag) => ({ tag }));
-    },
-  },
-  {
     path: '**',
     renderMode: RenderMode.Prerender,
   },
