@@ -18,7 +18,7 @@ import type { DocArticle } from '../api/doc-article-resolver';
   selector: 'app-docs-article',
   imports: [RouterLink],
   template: `
-    <div class="flex items-start gap-10">
+    <div class="flex items-start gap-10" [class]="containerClass()">
       <article class="min-w-0 flex-1">
         <!--
           제목과 도입 문장은 본문이 소유합니다. 프론트매터의 title 과 description 은
@@ -27,7 +27,7 @@ import type { DocArticle } from '../api/doc-article-resolver';
         <div #docBody class="doc-body prose" [innerHTML]="body()"></div>
       </article>
 
-      @if (article().toc.length > 0) {
+      @if (showToc()) {
         <aside class="sticky top-20 hidden w-56 shrink-0 xl:block" aria-label="목차">
           <h2 class="mb-3 text-xs font-semibold uppercase text-muted-foreground">목차</h2>
           <ul class="flex flex-col gap-1 border-l border-border">
@@ -60,6 +60,19 @@ export class DocsArticle {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly toc = computed(() => this.article().toc);
   private readonly docBody = viewChild<ElementRef<HTMLElement>>('docBody');
+
+  /**
+   * 글에는 목차를 두지 않습니다. 규격 문서는 원하는 규칙을 찾아 들어가지만
+   * 글은 처음부터 끝까지 읽는 것이 전제라 목차가 읽기를 돕지 않습니다.
+   */
+  protected readonly showToc = computed(
+    () => this.article().summary.kind !== 'post' && this.toc().length > 0,
+  );
+
+  /** 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다. */
+  protected readonly containerClass = computed(() =>
+    this.article().summary.kind === 'post' ? 'mx-auto max-w-[42.5rem] px-4 py-12' : '',
+  );
 
   /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */
   protected readonly activeHeading = injectActiveHeading(this.toc);

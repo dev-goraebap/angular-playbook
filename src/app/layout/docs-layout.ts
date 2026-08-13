@@ -22,7 +22,6 @@ import {
   type DocSummary,
 } from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
-import { ThemeToggle } from '../theme-toggle';
 
 /** 스택 안에서 문서를 나누는 묶음입니다. 참조와 결정 기록이 여기 해당합니다. */
 interface NavigationGroup {
@@ -46,7 +45,9 @@ interface NavigationDomain {
 }
 
 /**
- * 문서형 레이아웃입니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
+ * 문서 영역의 프레임입니다. 상단 바는 셸이 소유하므로 여기에는 사이드바와 본문만 있습니다.
+ *
+ * 원래 설명은 다음과 같습니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
  *
  * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/frontend/angular/references/레이아웃.md 2절이 원본입니다.
  * `topbar` 는 문서 전체가 스크롤 컨테이너이므로 헤더의 `sticky` 가 뷰포트를 기준으로 동작합니다.
@@ -70,60 +71,33 @@ interface NavigationDomain {
     HlmSheetContent,
     HlmSheetHeader,
     HlmSheetTitle,
-    ThemeToggle,
   ],
   providers: [provideIcons({ lucideMenu })],
   template: `
-    <a
-      href="#docs-main"
-      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
-    >
-      본문으로 건너뛰기
-    </a>
-
-    <div class="min-h-dvh bg-background text-foreground">
-      <!--
-        불투명도는 --toolbar 토큰이 모드별로 정합니다. 여기서 /95 같은 알파를 붙이면
-        라이트와 다크에 같은 값이 적용되어 다크에서 뒤 요소가 비쳐 보입니다.
-      -->
-      <header
-        class="bg-toolbar sticky top-0 z-40 border-b border-border backdrop-blur-lg backdrop-saturate-180"
+    <div class="mx-auto flex max-w-[90rem] items-start gap-10 px-4">
+      <nav
+        aria-label="문서 목록"
+        class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 lg:block"
       >
-        <div class="mx-auto flex h-14 max-w-[90rem] items-center gap-3 px-4">
-          <button
-            hlmBtn
-            variant="ghost"
-            size="icon-sm"
-            class="lg:hidden"
-            aria-label="문서 목록 열기"
-            (click)="mobileNavOpen.set(true)"
-          >
-            <ng-icon name="lucideMenu" />
-          </button>
+        <ng-container [ngTemplateOutlet]="navigation" />
+      </nav>
 
-          <a [routerLink]="routes.home()" class="font-semibold tracking-tight">
-            Angular Playbook
-          </a>
-          <span class="hidden text-sm text-muted-foreground sm:inline">
-            프론트엔드 아키텍처 표준
-          </span>
-
-          <app-theme-toggle class="ml-auto" />
-        </div>
-      </header>
-
-      <div class="mx-auto flex max-w-[90rem] items-start gap-10 px-4">
-        <nav
-          aria-label="문서 목록"
-          class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 lg:block"
+      <!-- flex 자식의 기본 min-width 는 auto 라 긴 표와 코드 블록이 열을 밀어냅니다. 레이아웃.md 4.2절 -->
+      <div id="main" class="min-w-0 flex-1 py-8">
+        <!-- 좁은 화면에서는 상단 바에 목록 버튼이 없으므로 본문 위에 둡니다. -->
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          class="mb-6 lg:hidden"
+          aria-label="문서 목록 열기"
+          (click)="mobileNavOpen.set(true)"
         >
-          <ng-container [ngTemplateOutlet]="navigation" />
-        </nav>
+          <ng-icon name="lucideMenu" />
+          문서 목록
+        </button>
 
-        <!-- flex 자식의 기본 min-width 는 auto 라 긴 표와 코드 블록이 열을 밀어냅니다. 레이아웃.md 4.2절 -->
-        <div id="docs-main" class="min-w-0 flex-1 py-8">
-          <router-outlet />
-        </div>
+        <router-outlet />
       </div>
     </div>
 
