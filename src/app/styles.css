@@ -22,6 +22,8 @@
   --color-info: var(--info);
   --color-success: var(--success);
   --color-toolbar: var(--toolbar);
+  --color-mark: var(--mark);
+  --color-mark-foreground: var(--mark-foreground);
 }
 
 /*
@@ -122,6 +124,17 @@ html {
 
   /* 글에서 `팁` 강조가 쓰는 색입니다. 표준 문서에는 이 종류가 없습니다. */
   --success: light-dark(oklch(0.52 0.15 150), oklch(0.75 0.15 155));
+
+  /*
+   * 검색 결과에서 질의와 겹치는 구간입니다. 색상은 `--primary` 와 같은 계열이라
+   * 걸린 자리가 링크나 활성 항목과 같은 의미로 읽힙니다.
+   *
+   * 배경만으로 구분하지 않고 글자색도 함께 바꿉니다. 옅은 배경 하나로는 표면과의 차이가
+   * 라이트 1.48:1 · 다크 1.75:1 에 그쳐 흘려 보면 놓칩니다.
+   * 글자와 배경의 대비는 라이트 8.84:1, 다크 7.08:1 입니다.
+   */
+  --mark: light-dark(oklch(0.87 0.075 262.9), oklch(0.42 0.1 254.6));
+  --mark-foreground: light-dark(oklch(0.32 0.16 262.9), oklch(0.94 0.045 254.6));
 
   /*
    * 상단 바의 배경입니다. 불투명도를 모드마다 다르게 둡니다.

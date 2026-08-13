@@ -7,7 +7,12 @@
       "@/shared/ui/utils": ["./src/shared/ui/utils/src/index.ts"],
       "@/shared/ui/card": ["./src/shared/ui/card/src/index.ts"],
       "@/shared/ui/spinner": ["./src/shared/ui/spinner/src/index.ts"],
-      "@/shared/ui/sheet": ["./src/shared/ui/sheet/src/index.ts"]
+      "@/shared/ui/sheet": ["./src/shared/ui/sheet/src/index.ts"],
+      "@/shared/ui/command": ["./src/shared/ui/command/src/index.ts"],
+      "@/shared/ui/input-group": ["./src/shared/ui/input-group/src/index.ts"],
+      "@/shared/ui/input": ["./src/shared/ui/input/src/index.ts"],
+      "@/shared/ui/textarea": ["./src/shared/ui/textarea/src/index.ts"],
+      "@/shared/ui/dialog": ["./src/shared/ui/dialog/src/index.ts"]
     },
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

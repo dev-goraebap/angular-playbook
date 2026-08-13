@@ -364,6 +364,11 @@ HTTP 인터셉터가 공통 에러 응답을 해석하고, 화면은 사용자�
 | **[0010](decisions/0010-ADR-에러화면-전체화면-통일.md)** | HTTP 에러 화면을 전체 화면으로 통일 | Accepted |
 | **[0011](decisions/0011-ADR-리졸버-베일-채택.md)** | 스켈레톤 기각, 리졸버와 베일 채택 (0003 대체) | Accepted |
 | **[0012](decisions/0012-ADR-로딩-적용-경계.md)** | 로딩 표현의 적용 경계를 층별로 고정 | Accepted |
+| **[0013](decisions/0013-ADR-생성문서-HTML-신뢰.md)** | 빌드 시점에 생성한 문서 HTML 에 한해 sanitizer 우회 허용 | Accepted |
+| **[0014](decisions/0014-ADR-폰트-선택과-자체-호스팅.md)** | 본문 Pretendard, 코드 JetBrains Mono 자체 호스팅 | Accepted |
+| **[0015](decisions/0015-ADR-문서-타이포그래피-프리셋.md)** | 문서 본문 서식에 fumadocs 프리셋과 shiki 채택 | Accepted |
+| **[0016](decisions/0016-ADR-블로그-디자인-도입.md)** | 색과 곡률, 표면 처리를 참조 디자인에 맞춤 | Accepted |
+| **[0017](decisions/0017-ADR-통합-검색과-색인-범위.md)** | 검색 진입점 통합, 색인을 절 제목과 인라인 코드로 한정 | Accepted |
 
 ## 10. 품질 요구사항 검증
 

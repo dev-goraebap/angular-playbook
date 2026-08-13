@@ -55,7 +55,9 @@ function locate(relPath) {
     if (parts.length === 3 && isIndex) {
       return { area: 'posts', domain: null, stack: null, group: null, kind: 'post' };
     }
-    throw new Error(`${relPath} 의 위치를 해석할 수 없습니다. 글은 posts/<슬러그>/index.md 여야 합니다.`);
+    throw new Error(
+      `${relPath} 의 위치를 해석할 수 없습니다. 글은 posts/<슬러그>/index.md 여야 합니다.`,
+    );
   }
 
   // about/index.md — 목록에 속하지 않는 단독 페이지입니다.
@@ -148,7 +150,9 @@ function readPostFields(relPath, data) {
   const date = toPlainDate(data.date);
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error(`${relPath} 의 date 가 "${data.date}" 입니다. YYYY-MM-DD 형태로 적어야 합니다.`);
+    throw new Error(
+      `${relPath} 의 date 가 "${data.date}" 입니다. YYYY-MM-DD 형태로 적어야 합니다.`,
+    );
   }
 
   if (!data.cover) {
@@ -237,7 +241,12 @@ async function buildImage(docRelPath, source) {
 
   if (COPY_AS_IS.has(extension)) {
     copyFileSync(sourcePath, join(outDir, `${name}${extension}`));
-    return { src: `/posts/${postSlug}/${name}${extension}`, srcset: null, width: null, height: null };
+    return {
+      src: `/posts/${postSlug}/${name}${extension}`,
+      srcset: null,
+      width: null,
+      height: null,
+    };
   }
 
   const image = sharp(sourcePath);
@@ -519,9 +528,7 @@ function collectSections(markdown) {
 }
 
 /** 슬러그별 절 앵커입니다. 다른 문서의 절을 가리키려면 렌더 전에 전부 필요합니다. */
-const sectionsBySlug = new Map(
-  documents.map((doc) => [doc.slug, collectSections(doc.markdown)]),
-);
+const sectionsBySlug = new Map(documents.map((doc) => [doc.slug, collectSections(doc.markdown)]));
 
 /**
  * 자리표시자로 쓰는 문자입니다.
@@ -539,7 +546,7 @@ let stashScope = 0;
 /** 구간을 잠시 걷어내고 복원 수단을 함께 돌려줍니다. */
 function stashMatches(text, pattern) {
   const scope = (stashScope += 1);
-  const open = STASH_MARK + scope + ":";
+  const open = STASH_MARK + scope + ':';
   const stash = [];
 
   const masked = text.replace(pattern, (match) => {
@@ -649,8 +656,7 @@ function resolveDocumentLink(href, fromPath) {
 
   if (!slug) {
     throw new Error(
-      `${fromPath} 의 링크 "${href}" 가 가리키는 문서를 찾을 수 없습니다. ` +
-        `대상: ${resolved}`,
+      `${fromPath} 의 링크 "${href}" 가 가리키는 문서를 찾을 수 없습니다. ` + `대상: ${resolved}`,
     );
   }
 
@@ -864,4 +870,100 @@ ${sorted.map((doc) => `  '${doc.slug}': () => import('./content/${doc.slug}'),`)
   'utf-8',
 );
 
-console.log(`문서 생성 완료: ${sorted.length}개`);
+/**
+ * 절마다 그 안에 나오는 인라인 코드를 모읍니다. `allowedHosts` 처럼 식별자로 찾는 경우를
+ * 절 제목만으로는 맞출 수 없기 때문입니다. 압축 후 6kB 로 본문 전문 141kB 의 1/23 입니다.
+ *
+ * 코드 블록은 제외합니다. 예제 전체가 들어오면 흔한 낱말이 모든 문서에 걸립니다.
+ *
+ * 절의 순서는 `toc` 와 같습니다. 둘 다 같은 마크다운에서 2·3단계 제목만 차례로 읽으므로
+ * 색인이 어긋나지 않습니다. 첫 제목 앞의 도입부는 문서 단위로 따로 담습니다.
+ */
+function collectCodeTokens(markdown, toc) {
+  const stripped = markdown.replace(/```[\s\S]*?```/g, ' ');
+  const sections = toc.map(() => new Set());
+  const lead = new Set();
+  let current = -1;
+
+  for (const line of stripped.split('\n')) {
+    // 제목에 들어 있는 코드는 절 제목 자체가 이미 담고 있습니다.
+    if (/^#{2,3}\s+/.test(line)) {
+      current += 1;
+      continue;
+    }
+
+    const target = current >= 0 && current < sections.length ? sections[current] : lead;
+
+    for (const match of line.matchAll(/`([^`\n]{1,60})`/g)) {
+      const token = match[1].trim();
+      if (token) target.add(token);
+    }
+  }
+
+  return { sections: sections.map((set) => [...set]), lead: [...lead] };
+}
+
+/*
+ * 검색 인덱스입니다. 본문 전문이 아니라 절 제목과 인라인 코드까지만 담습니다.
+ * 전문은 압축 후 141kB 이고 이 인덱스는 20kB 이므로 7배 차이가 납니다.
+ * 문서가 절 번호 체계를 갖고 있어 결과에서 해당 절로 바로 이동합니다.
+ *
+ * docs-index 와 파일을 나누는 이유는 지연 로드 때문입니다. 같은 파일에 두면
+ * 사이드바가 DOC_SUMMARIES 를 쓰는 순간 인덱스도 초기 번들로 따라 들어옵니다.
+ *
+ * 소개는 색인에 넣지 않습니다. 상단 메뉴와 하단 네비에 항상 나와 있어 찾을 필요가 없고,
+ * 자기소개 문장의 흔한 낱말이 문서 결과 사이에 섞여 목록을 흐립니다.
+ */
+const searchEntries = rendered
+  .filter(({ doc }) => doc.area !== 'about')
+  .map(({ doc, toc }) => {
+    const code = collectCodeTokens(doc.markdown, toc);
+
+    return {
+      slug: doc.slug,
+      title: doc.title,
+      description: doc.description,
+      area: doc.area,
+      ...(doc.tags?.length ? { tags: doc.tags } : {}),
+      ...(code.lead.length ? { code: code.lead } : {}),
+      sections: toc.map(({ id, text }, index) => ({
+        id,
+        text,
+        ...(code.sections[index].length ? { code: code.sections[index] } : {}),
+      })),
+    };
+  });
+
+writeFileSync(
+  join(OUT, 'search-index.ts'),
+  `${banner}
+import type { DocArea } from './docs-index';
+
+/** 문서 안의 절입니다. 앵커를 함께 담아 결과에서 그 절로 바로 이동합니다. */
+export interface SearchSection {
+  readonly id: string;
+  readonly text: string;
+  /** 절 안에 나오는 인라인 코드입니다. 없으면 생략합니다. */
+  readonly code?: readonly string[];
+}
+
+export interface SearchEntry {
+  readonly slug: string;
+  readonly title: string;
+  readonly description: string;
+  readonly area: DocArea;
+  /** 글에만 있습니다. */
+  readonly tags?: readonly string[];
+  /** 첫 절 제목 앞 도입부의 인라인 코드입니다. 절에 속하지 않아 따로 담습니다. */
+  readonly code?: readonly string[];
+  readonly sections: readonly SearchSection[];
+}
+
+export const SEARCH_ENTRIES: readonly SearchEntry[] = ${JSON.stringify(searchEntries, null, 2)};
+`,
+  'utf-8',
+);
+
+const sectionCount = searchEntries.reduce((total, entry) => total + entry.sections.length, 0);
+
+console.log(`문서 생성 완료: ${sorted.length}개, 검색 인덱스 절 ${sectionCount}개`);
