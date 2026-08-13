@@ -66,12 +66,18 @@ export class DocsArticle {
    * 글은 처음부터 끝까지 읽는 것이 전제라 목차가 읽기를 돕지 않습니다.
    */
   protected readonly showToc = computed(
-    () => this.article().summary.kind !== 'post' && this.toc().length > 0,
+    () => !this.isReading() && this.toc().length > 0,
   );
+
+  /** 글과 단독 페이지는 처음부터 끝까지 읽는 화면입니다. */
+  private readonly isReading = computed(() => {
+    const kind = this.article().summary.kind;
+    return kind === 'post' || kind === 'page';
+  });
 
   /** 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다. */
   protected readonly containerClass = computed(() =>
-    this.article().summary.kind === 'post' ? 'mx-auto max-w-[42.5rem] px-4 py-12' : '',
+    this.isReading() ? 'mx-auto max-w-170 px-4 py-12' : '',
   );
 
   /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */

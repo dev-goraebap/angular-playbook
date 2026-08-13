@@ -1,6 +1,8 @@
 import { Component, computed } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { DOC_SUMMARIES, type DocSummary } from '@/shared/markdown';
-import { PostCard } from './post-card';
+import { ROUTES } from '@/shared/config';
+import { PostCard } from '@/entities/post';
 
 interface TagCount {
   readonly tag: string;
@@ -15,11 +17,11 @@ interface TagCount {
  */
 @Component({
   selector: 'app-blog-home',
-  imports: [PostCard],
+  imports: [RouterLink, PostCard],
   template: `
     <div
       id="main"
-      class="mx-auto max-w-[66rem] px-4 py-12 md:grid md:grid-cols-[minmax(0,40rem)_17.5rem] md:gap-16"
+      class="mx-auto max-w-264 px-4 py-12 md:grid md:grid-cols-[minmax(0,40rem)_17.5rem] md:gap-16"
     >
       <div>
         <section class="mb-8">
@@ -48,12 +50,13 @@ interface TagCount {
           <h2 class="mb-4 text-lg font-normal">Topics</h2>
           <div class="flex flex-wrap gap-2">
             @for (entry of tags(); track entry.tag) {
-              <span
-                class="inline-flex h-8 items-center rounded-lg border border-border px-3 text-sm text-foreground-secondary"
+              <a
+                [routerLink]="routes.tag(entry.tag)"
+                class="inline-flex h-8 items-center rounded-lg border border-border px-3 text-sm text-foreground-secondary transition-colors hover:border-primary hover:text-primary"
               >
                 #{{ entry.tag }}
                 <span class="ml-1.5 text-xs text-muted-foreground">{{ entry.count }}</span>
-              </span>
+              </a>
             }
           </div>
         </div>
@@ -62,6 +65,8 @@ interface TagCount {
   `,
 })
 export class BlogHome {
+  protected readonly routes = ROUTES;
+
   /** 최신 글이 위에 옵니다. 목록의 기준은 발행일이며 프론트매터의 order 가 아닙니다. */
   protected readonly posts = computed<readonly DocSummary[]>(() =>
     [...DOC_SUMMARIES.filter((doc) => doc.kind === 'post')].sort((a, b) =>

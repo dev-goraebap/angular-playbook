@@ -63,5 +63,6 @@ export class AppShell {
   protected readonly menu = [
     { path: '/', label: '블로그', exact: true },
     { path: '/architectures', label: '아키텍처', exact: false },
+    { path: '/about', label: '소개', exact: false },
   ];
 }
