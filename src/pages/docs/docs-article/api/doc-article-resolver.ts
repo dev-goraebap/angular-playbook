@@ -14,10 +14,10 @@ export interface DocArticle {
 }
 
 /**
- * 문서 본문을 화면 진입 전에 받습니다. fetch-then-render 원칙은 docs/references/로딩-전략.md §1 이 원본입니다.
+ * 문서 본문을 화면 진입 전에 받습니다. fetch-then-render 원칙은 docs/references/로딩-전략.md 1절이 원본입니다.
  *
  * 존재하지 않는 슬러그에는 `RedirectCommand` 를 반환합니다. 리졸버가 그냥 실패하면 네비게이션이
- * 취소되어 사용자가 이전 화면에 남고 아무 일도 일어나지 않은 것처럼 보입니다(§5.5).
+ * 취소되어 사용자가 이전 화면에 남고 아무 일도 일어나지 않은 것처럼 보입니다(5.5절).
  */
 export const docArticleResolver: ResolveFn<DocArticle | RedirectCommand> = async (route) => {
   const slug = route.paramMap.get('slug') ?? '';

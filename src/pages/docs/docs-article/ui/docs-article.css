@@ -70,7 +70,7 @@
   margin-block: 1.5rem;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--muted);
   font-size: 0.8125rem;
   line-height: 1.65;
@@ -88,15 +88,18 @@
 
 /*
  * 강조 블록입니다. 종류는 `주의` 와 `중요` 둘뿐이며 빌드가 나머지를 거부합니다.
- * 색만으로 구분하지 않도록 아이콘과 라벨을 함께 둡니다. 근거는 docs/references/접근성.md §6 입니다.
+ * 색만으로 구분하지 않도록 아이콘과 라벨을 함께 둡니다. 근거는 docs/references/접근성.md 6절입니다.
+ */
+/*
+ * 배경과 경계를 강조색에서 만듭니다. 중립 회색을 깔면 두 종류가 라벨 색으로만 갈리는데,
+ * 그 차이는 훑어볼 때 눈에 들어오지 않습니다. 옅게 섞은 배경은 블록 전체를 구분해 줍니다.
  */
 .doc-body .markdown-alert {
   margin-block: 1.5rem;
   padding: 1rem 1.125rem;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--alert-accent);
-  border-radius: var(--radius);
-  background: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--alert-accent) 25%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--alert-accent) 8%, transparent);
 }
 
 .doc-body .markdown-alert-warning {
@@ -179,12 +182,12 @@
   overflow-x: auto;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--muted);
   font-size: 0.8125rem;
 }
 
-/* 근거는 docs/references/접근성.md §9 입니다. */
+/* 근거는 docs/references/접근성.md 9절입니다. */
 @media (prefers-reduced-motion: reduce) {
   .doc-body .mermaid-diagram {
     transition: none;

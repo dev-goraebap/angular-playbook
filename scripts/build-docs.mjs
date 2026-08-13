@@ -97,7 +97,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/references/개발-환경.md 5.2절 입니다.
+ * 규칙의 원본은 docs/references/개발-환경.md 5.2절입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -376,7 +376,7 @@ function linkSectionReferences(html, doc) {
  * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
  * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
  * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
- * 규칙의 원본은 docs/references/개발-환경.md 5.4절 입니다.
+ * 규칙의 원본은 docs/references/개발-환경.md 5.4절입니다.
  */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;

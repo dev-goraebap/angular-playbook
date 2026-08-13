@@ -39,7 +39,7 @@ let renderSequence = 0;
  * 늘어나는 과정을 전환으로 보여주는 선택이며 근거는 CSS 파일 주석에 있습니다.
  *
  * DOM 과 동적 임포트이므로 시작을 `afterNextRender` 안으로 제한합니다.
- * 근거는 docs/references/렌더링-전략.md §2 에 있습니다.
+ * 근거는 docs/references/렌더링-전략.md 2절에 있습니다.
  */
 export function injectMermaidDiagrams(
   host: Signal<ElementRef<HTMLElement> | undefined>,

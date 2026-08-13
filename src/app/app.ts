@@ -23,7 +23,7 @@ export class App {
      * `ViewportScroller` 가 `scrollIntoView()` 대신 좌표를 계산해 `scrollTo()` 를 호출하므로,
      * CSS 만 지정하면 sticky 헤더가 절 제목을 가립니다. 오프셋을 라우터에 별도로 알립니다.
      *
-     * 함수로 넘기는 이유는 기준 배율이 뷰포트 폭에 따라 달라지기 때문입니다(접근성.md §5).
+     * 함수로 넘기는 이유는 기준 배율이 뷰포트 폭에 따라 달라지기 때문입니다(접근성.md 5절).
      * 값을 고정하면 넓은 화면에서 여백이 모자랍니다.
      */
     inject(ViewportScroller).setOffset(() => [0, this.anchorOffset()]);
