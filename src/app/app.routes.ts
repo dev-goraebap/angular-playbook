@@ -22,6 +22,19 @@ export const routes: Routes = [
     ],
   },
   {
+    // 글은 계층이 없어 슬러그 한 조각입니다. 레이아웃은 아직 문서형을 함께 씁니다.
+    path: 'posts',
+    loadComponent: () => import('./layout/docs-layout').then((m) => m.DocsLayout),
+    children: [
+      {
+        path: ':slug',
+        loadComponent: () => import('@/pages/docs/docs-article').then((m) => m.DocsArticle),
+        resolve: { article: docArticleResolver },
+        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+      },
+    ],
+  },
+  {
     path: '',
     pathMatch: 'full',
     loadComponent: () => import('@/pages/docs/docs-home').then((m) => m.DocsHome),

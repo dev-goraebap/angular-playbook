@@ -15,8 +15,16 @@ export const serverRoutes: ServerRoute[] = [
     path: 'architectures/**',
     renderMode: RenderMode.Prerender,
     getPrerenderParams: async () =>
-      DOC_SUMMARIES.filter((doc) => doc.slug !== 'architectures').map((doc) => ({
-        '**': doc.slug.slice('architectures/'.length),
+      DOC_SUMMARIES.filter((doc) => doc.area === 'architectures' && doc.slug !== 'architectures').map(
+        (doc) => ({ '**': doc.slug.slice('architectures/'.length) }),
+      ),
+  },
+  {
+    path: 'posts/:slug',
+    renderMode: RenderMode.Prerender,
+    getPrerenderParams: async () =>
+      DOC_SUMMARIES.filter((doc) => doc.kind === 'post').map((doc) => ({
+        slug: doc.slug.slice('posts/'.length),
       })),
   },
   {

@@ -20,6 +20,7 @@
   --color-foreground-secondary: var(--foreground-secondary);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-success: var(--success);
   --color-toolbar: var(--toolbar);
 }
 
@@ -118,6 +119,9 @@ html {
    */
   --warning: light-dark(oklch(0.545 0.14 65), oklch(0.8 0.13 72));
   --info: light-dark(oklch(0.52 0.17 255), oklch(0.75 0.13 240));
+
+  /* 글에서 `팁` 강조가 쓰는 색입니다. 표준 문서에는 이 종류가 없습니다. */
+  --success: light-dark(oklch(0.52 0.15 150), oklch(0.75 0.15 155));
 
   /*
    * 상단 바의 배경입니다. 불투명도를 모드마다 다르게 둡니다.

@@ -60,6 +60,7 @@
     "marked-alert": "^2.1.2",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
+    "sharp": "^0.35.3",
     "shiki": "^4.4.3",
     "steiger": "^0.6.0",
     "tailwindcss": "^4.1.12",

@@ -102,12 +102,28 @@
   background: color-mix(in srgb, var(--alert-accent) 8%, transparent);
 }
 
+/*
+ * 종류마다 색을 달리합니다. 표준 문서는 주의와 중요 둘만 쓰고,
+ * 글은 다섯 종류를 모두 씁니다. 규칙은 개발-환경.md 5.3절이 원본입니다.
+ */
 .doc-body .markdown-alert-warning {
   --alert-accent: var(--warning);
 }
 
 .doc-body .markdown-alert-important {
   --alert-accent: var(--info);
+}
+
+.doc-body .markdown-alert-note {
+  --alert-accent: var(--primary);
+}
+
+.doc-body .markdown-alert-tip {
+  --alert-accent: var(--success);
+}
+
+.doc-body .markdown-alert-caution {
+  --alert-accent: var(--destructive);
 }
 
 .doc-body .markdown-alert-title {

@@ -1,13 +1,14 @@
 // docs/ 의 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
 // 생성물은 커밋하지 않으며 빌드와 검사 전에 항상 다시 만듭니다.
 // 규칙의 근거는 docs/architectures/frontend/angular/references/개발-환경.md 가 원본입니다.
-import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
-import { dirname, join, posix, relative, resolve } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, copyFileSync } from 'node:fs';
+import { basename, dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import { Marked } from 'marked';
 import markedAlert from 'marked-alert';
 import { createHighlighter } from 'shiki';
+import sharp from 'sharp';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
@@ -32,25 +33,39 @@ const DOMAINS = {
  * 문서의 위치를 경로에서 읽습니다. 계층을 프론트매터에 적지 않는 이유는
  * 폴더 구조가 이미 그 정보를 담고 있어 두 벌이 되면 한쪽이 낡기 때문입니다.
  *
- * 인식하는 형태는 셋입니다.
+ * 인식하는 형태는 넷입니다.
  *   architectures/index.md                          → 영역 개요
  *   architectures/<domain>/<stack>/index.md         → 스택 개요
  *   architectures/<domain>/<stack>/<group>/<파일>   → 스택의 문서
+ *   posts/<slug>/index.md                           → 글
  *
- * URL 은 `/architectures/<stack>/<slug>` 로 조립합니다. domain 과 group 을 주소에 넣지 않는
- * 이유는 스택 이름이 이미 유일하고, 계층은 사이드바가 보여주기 때문입니다.
+ * 글이 폴더 형태인 이유는 이미지를 본문 옆에 두기 위함입니다. 자산이 문서와 함께 움직입니다.
+ *
+ * URL 은 `/architectures/<stack>/<slug>` 와 `/posts/<slug>` 로 조립합니다.
+ * domain 과 group 을 주소에 넣지 않는 이유는 스택 이름이 이미 유일하고,
+ * 계층은 사이드바가 보여주기 때문입니다.
  */
 function locate(relPath) {
   const parts = relPath.split('/');
   const isIndex = parts.at(-1) === 'index.md';
 
+  // posts/<slug>/index.md
+  if (parts[0] === 'posts') {
+    if (parts.length === 3 && isIndex) {
+      return { area: 'posts', domain: null, stack: null, group: null, kind: 'post' };
+    }
+    throw new Error(`${relPath} 의 위치를 해석할 수 없습니다. 글은 posts/<슬러그>/index.md 여야 합니다.`);
+  }
+
   if (parts[0] !== 'architectures') {
-    throw new Error(`${relPath} 이 인식할 수 없는 위치에 있습니다. architectures/ 아래에 두어야 합니다.`);
+    throw new Error(
+      `${relPath} 이 인식할 수 없는 위치에 있습니다. architectures/ 또는 posts/ 아래에 두어야 합니다.`,
+    );
   }
 
   // architectures/index.md
   if (parts.length === 2 && isIndex) {
-    return { domain: null, stack: null, group: null, kind: 'area' };
+    return { area: 'architectures', domain: null, stack: null, group: null, kind: 'area' };
   }
 
   const [, domain, stack] = parts;
@@ -61,13 +76,13 @@ function locate(relPath) {
 
   // architectures/<domain>/<stack>/index.md
   if (parts.length === 4 && isIndex) {
-    return { domain, stack, group: null, kind: 'stack' };
+    return { area: 'architectures', domain, stack, group: null, kind: 'stack' };
   }
 
   // architectures/<domain>/<stack>/<group>/<파일>
   const group = parts[3];
   if (parts.length === 5 && group in GROUPS) {
-    return { domain, stack, group, kind: 'document' };
+    return { area: 'architectures', domain, stack, group, kind: 'document' };
   }
 
   throw new Error(
@@ -77,7 +92,8 @@ function locate(relPath) {
 }
 
 /** 사이트에서 쓰는 경로입니다. 문서의 식별자를 겸합니다. */
-function toUrlPath({ stack, kind }, slug) {
+function toUrlPath({ stack, kind }, relPath, slug) {
+  if (kind === 'post') return `posts/${relPath.split('/')[1]}`;
   if (kind === 'area') return 'architectures';
   if (kind === 'stack') return `architectures/${stack}`;
   return `architectures/${stack}/${slug}`;
@@ -85,12 +101,18 @@ function toUrlPath({ stack, kind }, slug) {
 
 // ── 문서 수집 ───────────────────────────────────────────────────────────────
 
+/**
+ * 문서와 함께 두는 자산 폴더입니다. 순회 대상이 아닙니다.
+ * 첨부한 마크다운이 문서로 잡히면 위치 해석에 실패합니다.
+ */
+const ASSET_DIR = 'assets';
+
 /** docs/ 아래의 마크다운 경로를 docs 기준 상대 경로로 모읍니다. */
 function collectMarkdownPaths(dir = DOCS, acc = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      collectMarkdownPaths(full, acc);
+      if (entry.name !== ASSET_DIR) collectMarkdownPaths(full, acc);
       continue;
     }
     if (!entry.name.endsWith('.md')) continue;
@@ -105,25 +127,60 @@ function collectMarkdownPaths(dir = DOCS, acc = []) {
 const paths = collectMarkdownPaths().sort();
 const documents = [];
 
+/**
+ * 날짜를 YYYY-MM-DD 로 통일합니다.
+ * YAML 파서가 따옴표 없는 날짜를 Date 로 만들어 주므로 두 형태가 함께 들어옵니다.
+ */
+function toPlainDate(value) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value ?? '');
+}
+
+/** 글이 추가로 요구하는 값입니다. 목록의 정렬과 표시에 쓰므로 없으면 화면을 만들 수 없습니다. */
+function readPostFields(relPath, data) {
+  const date = toPlainDate(data.date);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error(`${relPath} 의 date 가 "${data.date}" 입니다. YYYY-MM-DD 형태로 적어야 합니다.`);
+  }
+
+  if (!data.cover) {
+    throw new Error(`${relPath} 에 cover 가 없습니다. 목록 카드가 표지 없이 비어 보입니다.`);
+  }
+
+  return {
+    date,
+    tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+    cover: String(data.cover),
+    coverColor: data.coverColor ? String(data.coverColor) : null,
+  };
+}
+
 for (const relPath of paths) {
   const raw = readFileSync(join(DOCS, relPath), 'utf-8');
   const { data, content } = matter(raw);
+  const position = locate(relPath);
 
-  for (const field of ['slug', 'title', 'description']) {
+  // 글의 슬러그는 폴더명이므로 프론트매터에 적지 않습니다.
+  const required = position.kind === 'post' ? ['title', 'description'] : ['slug', 'title', 'description'];
+
+  for (const field of required) {
     if (!data[field]) {
       throw new Error(`${relPath} 의 프론트매터에 ${field} 가 없습니다.`);
     }
   }
 
-  const position = locate(relPath);
+  // 초안은 사이트에 내보내지 않습니다. 원본은 저장소에 남습니다.
+  if (position.kind === 'post' && data.published !== true) continue;
 
   documents.push({
     path: relPath,
-    slug: toUrlPath(position, data.slug),
+    slug: toUrlPath(position, relPath, data.slug),
     title: data.title,
     description: data.description,
     order: typeof data.order === 'number' ? data.order : 999,
     ...position,
+    ...(position.kind === 'post' ? readPostFields(relPath, data) : {}),
     markdown: content,
   });
 }
@@ -137,6 +194,118 @@ if (duplicated.length > 0) {
   throw new Error(`경로가 중복되었습니다: ${[...new Set(duplicated)].join(', ')}`);
 }
 
+// ── 이미지 ──────────────────────────────────────────────────────────────────
+
+/**
+ * 생성할 폭입니다. 본문 최대 폭이 680px 이므로 2배 밀도까지 덮습니다.
+ * 원본이 목록의 최대 폭보다 작으면 그보다 큰 폭은 만들지 않습니다. 늘려도 화질이 좋아지지 않습니다.
+ */
+const IMAGE_WIDTHS = [320, 640, 1360];
+
+/** 벡터는 크기를 바꿀 이유가 없고 애니메이션은 정지 프레임으로 굳으므로 그대로 복사합니다. */
+const COPY_AS_IS = new Set(['.svg', '.gif']);
+
+const ASSETS = join(ROOT, 'public', 'posts');
+
+/**
+ * 글의 이미지를 폭별로 만들고 화면이 쓸 정보를 돌려줍니다.
+ *
+ * Astro 가 해 주던 일을 우리가 소유합니다. 원본을 그대로 내보내면 모바일에서도
+ * 최대 1.2MB 를 받게 되므로, 옮기면서 성능이 나빠지는 결과가 됩니다.
+ *
+ * 생성물은 public/posts/ 에 놓이며 커밋하지 않습니다. 원본이 docs/posts/ 에 있어
+ * 마크다운 차이를 보면 충분하다는 판단은 문서 HTML 과 같습니다.
+ */
+async function buildImage(docRelPath, source) {
+  const postSlug = docRelPath.split('/')[1];
+  const sourcePath = resolve(join(DOCS, dirname(docRelPath)), source);
+  const extension = extname(sourcePath).toLowerCase();
+  const name = basename(sourcePath, extension);
+  const outDir = join(ASSETS, postSlug);
+
+  mkdirSync(outDir, { recursive: true });
+
+  if (COPY_AS_IS.has(extension)) {
+    copyFileSync(sourcePath, join(outDir, `${name}${extension}`));
+    return { src: `/posts/${postSlug}/${name}${extension}`, srcset: null, width: null, height: null };
+  }
+
+  const image = sharp(sourcePath);
+  const { width: originalWidth, height: originalHeight } = await image.metadata();
+  const widths = IMAGE_WIDTHS.filter((width) => width <= originalWidth);
+  if (widths.length === 0) widths.push(originalWidth);
+
+  const entries = [];
+  for (const width of widths) {
+    const file = `${name}-${width}.webp`;
+    await sharp(sourcePath).resize({ width }).webp({ quality: 82 }).toFile(join(outDir, file));
+    entries.push(`/posts/${postSlug}/${file} ${width}w`);
+  }
+
+  const largest = widths.at(-1);
+
+  return {
+    src: `/posts/${postSlug}/${name}-${largest}.webp`,
+    srcset: entries.join(', '),
+    // 비율을 넘겨 두면 이미지가 도착하기 전에도 자리가 잡혀 본문이 밀리지 않습니다.
+    width: originalWidth,
+    height: originalHeight,
+  };
+}
+
+/** 문서가 참조하는 저장소 안의 이미지입니다. 외부 주소는 우리가 다룰 수 없으므로 뺍니다. */
+function collectImageSources(doc) {
+  const sources = new Set();
+  if (doc.cover) sources.add(doc.cover);
+
+  for (const match of doc.markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)) {
+    const href = match[1];
+    if (!/^[a-z]+:/i.test(href) && !href.startsWith('/')) sources.add(href);
+  }
+
+  return sources;
+}
+
+/**
+ * 이미지를 미리 전부 만들어 둡니다.
+ * marked 의 렌더러가 동기라 변환 도중에는 파일을 만들 수 없습니다.
+ */
+async function buildImages(docs) {
+  const built = new Map();
+
+  rmSync(ASSETS, { recursive: true, force: true });
+
+  for (const doc of docs) {
+    if (doc.kind !== 'post') continue;
+
+    for (const source of collectImageSources(doc)) {
+      built.set(`${doc.path}::${source}`, await buildImage(doc.path, source));
+    }
+  }
+
+  return built;
+}
+
+/** 이미지 하나를 `<img>` 로 만듭니다. 크기를 함께 심어 레이아웃 이동을 없앱니다. */
+function toImageTag({ src, srcset, width, height }, alt, sizes) {
+  const attributes = [
+    `src="${src}"`,
+    srcset ? `srcset="${srcset}"` : '',
+    srcset ? `sizes="${sizes}"` : '',
+    `alt="${escapeAttribute(alt)}"`,
+    width ? `width="${width}"` : '',
+    height ? `height="${height}"` : '',
+    'loading="lazy"',
+    'decoding="async"',
+  ].filter(Boolean);
+
+  return `<img ${attributes.join(' ')}>`;
+}
+
+function escapeAttribute(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 // ── 강조 블록 ───────────────────────────────────────────────────────────────
 
 /**
@@ -148,6 +317,10 @@ const ALERT_ICONS = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>',
   important:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>',
+  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"></path><path d="M15 3v4a2 2 0 0 0 2 2h4"></path></svg>',
+  tip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>',
+  caution:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path><circle cx="12" cy="12" r="10"></circle></svg>',
 };
 
 /**
@@ -159,9 +332,20 @@ const ALERT_ICONS = {
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
   { type: 'important', title: '중요', icon: ALERT_ICONS.important },
+  { type: 'note', title: '참고', icon: ALERT_ICONS.note },
+  { type: 'tip', title: '팁', icon: ALERT_ICONS.tip },
+  { type: 'caution', title: '경고', icon: ALERT_ICONS.caution },
 ];
 
-const ALLOWED_ALERTS = new Set(ALERT_VARIANTS.map((variant) => variant.type));
+/**
+ * 표준 문서는 두 종류만 씁니다. 규범집에서 강조가 흔해지면 정작 치명적인 경고가 묻힙니다.
+ * 글은 다섯 종류를 모두 허용하고 개수도 제한하지 않습니다.
+ * 규격을 정의하는 문서와 생각을 풀어 쓰는 글은 강조의 성격이 다릅니다.
+ */
+const ALLOWED_ALERTS = {
+  architectures: new Set(['warning', 'important']),
+  posts: new Set(ALERT_VARIANTS.map((variant) => variant.type)),
+};
 
 /** 한 절에 허용하는 강조 블록의 개수입니다. */
 const ALERTS_PER_SECTION = 1;
@@ -175,12 +359,15 @@ const ALERTS_PER_SECTION = 1;
  * 밀도를 검사하는 이유는 강조가 희소할 때만 작동하기 때문입니다.
  * 한 절에 여러 개가 이어지면 시선이 계속 끊기고 정작 치명적인 경고가 묻힙니다.
  */
-function assertAlertRules(relPath, markdown) {
+function assertAlertRules(relPath, markdown, area) {
+  const allowed = ALLOWED_ALERTS[area];
+  const limitDensity = area === 'architectures';
+
   let section = '문서 앞머리';
   let count = 0;
 
   const verifyDensity = () => {
-    if (count <= ALERTS_PER_SECTION) return;
+    if (!limitDensity || count <= ALERTS_PER_SECTION) return;
 
     throw new Error(
       `${relPath} 의 "${section}" 절에 강조 블록이 ${count} 개 있습니다. ` +
@@ -201,10 +388,10 @@ function assertAlertRules(relPath, markdown) {
     const alert = line.match(/^>\s*\[!(\w+)\]/);
     if (!alert) continue;
 
-    if (!ALLOWED_ALERTS.has(alert[1].toLowerCase())) {
+    if (!allowed.has(alert[1].toLowerCase())) {
       throw new Error(
         `${relPath} 이 허용하지 않는 강조 블록 [!${alert[1]}] 를 사용합니다. ` +
-          `허용 종류는 ${[...ALLOWED_ALERTS].map((type) => `[!${type.toUpperCase()}]`).join(', ')} 입니다.`,
+          `허용 종류는 ${[...allowed].map((type) => `[!${type.toUpperCase()}]`).join(', ')} 입니다.`,
       );
     }
 
@@ -462,7 +649,7 @@ function resolveDocumentLink(href, fromPath) {
 
 /** 문서 하나를 HTML 과 목차로 변환합니다. */
 function render(doc) {
-  assertAlertRules(doc.path, doc.markdown);
+  assertAlertRules(doc.path, doc.markdown, doc.area);
 
   const toc = [];
   const marked = new Marked({ gfm: true });
@@ -489,6 +676,16 @@ function render(doc) {
         // 넓은 표는 자기 영역 안에서 가로 스크롤됩니다. 본문이 좌우로 흔들리지 않게 합니다.
         const rendered = this.parser.renderer.constructor.prototype.table.call(this, token);
         return `<div class="table-scroll">${rendered}</div>`;
+      },
+      image({ href, text }) {
+        const built = images.get(`${doc.path}::${href}`);
+
+        // 외부 주소는 그대로 둡니다. 크기를 알 수 없어 자리를 예약하지 못합니다.
+        if (!built) {
+          return `<img src="${href}" alt="${escapeAttribute(text ?? '')}" loading="lazy" decoding="async">`;
+        }
+
+        return toImageTag(built, text ?? '', '(max-width: 768px) 100vw, 680px');
       },
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
@@ -539,6 +736,8 @@ const sorted = [...documents].sort((a, b) => {
  * 그 상태에서는 실행 중인 개발 서버가 모듈을 찾지 못해 실패하며,
  * 원인이 마크다운 한 줄인데 오류는 타입스크립트 임포트에서 나므로 추적이 어렵습니다.
  */
+const images = await buildImages(sorted);
+
 const rendered = sorted.map((doc) => ({ doc, ...render(doc) }));
 
 rmSync(OUT, { recursive: true, force: true });
@@ -562,29 +761,53 @@ export const toc = ${JSON.stringify(toc, null, 2)};
   );
 }
 
-const summaries = sorted.map(({ slug, title, description, domain, stack, group, kind }) => ({
-  slug,
-  title,
-  description,
-  domain,
-  stack,
-  group,
-  kind,
+const summaries = sorted.map((doc) => ({
+  slug: doc.slug,
+  title: doc.title,
+  description: doc.description,
+  area: doc.area,
+  domain: doc.domain,
+  stack: doc.stack,
+  group: doc.group,
+  kind: doc.kind,
+  // 글은 목록 카드가 날짜와 표지를 함께 그리므로 요약에 담습니다.
+  ...(doc.kind === 'post'
+    ? {
+        date: doc.date,
+        tags: doc.tags,
+        coverColor: doc.coverColor,
+        cover: images.get(`${doc.path}::${doc.cover}`) ?? null,
+      }
+    : {}),
 }));
 
 writeFileSync(
   join(OUT, 'docs-index.ts'),
   `${banner}
+/** 빌드가 폭별로 만들어 둔 이미지입니다. 벡터는 srcset 과 크기를 갖지 않습니다. */
+export interface DocImage {
+  readonly src: string;
+  readonly srcset: string | null;
+  readonly width: number | null;
+  readonly height: number | null;
+}
+
 export interface DocSummary {
   /** 사이트 경로이자 문서의 식별자입니다. 예: architectures/angular/performance */
   readonly slug: string;
   readonly title: string;
   readonly description: string;
+  readonly area: DocArea;
   /** 영역 개요는 domain 과 stack 을 갖지 않고, 스택 개요는 group 을 갖지 않습니다. */
   readonly domain: DocDomain | null;
   readonly stack: string | null;
   readonly group: DocGroup | null;
   readonly kind: DocKind;
+  /** 아래 넷은 글에만 있습니다. */
+  readonly date?: string;
+  readonly tags?: readonly string[];
+  readonly coverColor?: string | null;
+  readonly cover?: DocImage | null;
 }
 
 export interface DocHeading {
@@ -598,7 +821,9 @@ export interface DocContent {
   readonly toc: readonly DocHeading[];
 }
 
-export type DocKind = 'area' | 'stack' | 'document';
+export type DocArea = 'architectures' | 'posts';
+
+export type DocKind = 'area' | 'stack' | 'document' | 'post';
 
 export type DocDomain = ${Object.keys(DOMAINS)
     .map((key) => `'${key}'`)

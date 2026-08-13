@@ -24,8 +24,10 @@ export interface DocArticle {
  * 취소되어 사용자가 이전 화면에 남고 아무 일도 일어나지 않은 것처럼 보입니다(5.5절).
  */
 export const docArticleResolver: ResolveFn<DocArticle | RedirectCommand> = async (route) => {
-  const rest = route.url.map((segment) => segment.path).join('/');
-  const slug = rest ? `architectures/${rest}` : 'architectures';
+  // 루트부터의 모든 조각을 이으면 문서의 슬러그가 됩니다. 부모 라우트의 경로도 슬러그의 일부입니다.
+  const slug = route.pathFromRoot
+    .flatMap((entry) => entry.url.map((segment) => segment.path))
+    .join('/');
 
   const load = DOC_CONTENT_LOADERS[slug];
   const summary = DOC_SUMMARIES.find((doc) => doc.slug === slug);
