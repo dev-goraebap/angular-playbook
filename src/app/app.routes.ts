@@ -25,7 +25,12 @@ export const routes: Routes = [
         path: 'posts/:slug',
         loadComponent: () => import('@/pages/docs/docs-article').then((m) => m.DocsArticle),
         resolve: { article: docArticleResolver },
-        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+        /*
+         * URL 세그먼트만 비교합니다. 문서 화면은 쿼리 파라미터를 읽지 않으므로 쿼리 변화에
+         * 리졸버가 다시 돌 이유가 없고, 셸이 검색 상태를 `?q=` 로 들고 있어 검색을 열고 닫을
+         * 때마다 재실행됩니다. 문서 간 이동은 세그먼트가 달라지므로 그대로 잡힙니다.
+         */
+        runGuardsAndResolvers: 'pathParamsChange',
       },
       {
         path: 'about',
@@ -40,7 +45,8 @@ export const routes: Routes = [
             path: '**',
             loadComponent: () => import('@/pages/docs/docs-article').then((m) => m.DocsArticle),
             resolve: { article: docArticleResolver },
-            runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+            // 사유는 위 posts 라우트와 같습니다.
+            runGuardsAndResolvers: 'pathParamsChange',
           },
         ],
       },

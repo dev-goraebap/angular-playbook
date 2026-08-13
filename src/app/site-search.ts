@@ -3,19 +3,19 @@ import {
   Component,
   computed,
   effect,
-  inject,
   input,
   output,
   resource,
   signal,
+  untracked,
   viewChild,
   type ElementRef,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideX } from '@ng-icons/lucide';
 import type { BrnDialogState } from '@spartan-ng/brain/dialog';
-import { ROUTES } from '@/shared/config';
 import {
   loadSearchEntries,
   searchDocs,
@@ -24,6 +24,7 @@ import {
   type SearchHit,
   type TextSegment,
 } from '@/shared/markdown';
+import { HlmButton } from '@/shared/ui/button';
 import { HlmCommandImports } from '@/shared/ui/command';
 
 /**
@@ -74,7 +75,8 @@ interface ResultGroup {
  */
 @Component({
   selector: 'app-site-search',
-  imports: [HlmCommandImports],
+  imports: [HlmCommandImports, HlmButton, NgIcon],
+  providers: [provideIcons({ lucideX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!--
@@ -92,8 +94,25 @@ interface ResultGroup {
         걸러내기를 직접 하므로 brain 의 기본 필터를 끕니다. 항목은 이미 점수순으로 추려져
         들어오며, 여기서 한 번 더 걸러내면 순위가 뒤집히고 절 제목 일치가 사라집니다.
       -->
-      <hlm-command [filter]="acceptAll" [search]="query()" (searchChange)="query.set($event)">
-        <hlm-command-input placeholder="글과 문서 검색" />
+      <hlm-command [filter]="acceptAll" [search]="draft()" (searchChange)="draft.set($event)">
+        <!--
+          좁은 화면에는 백드롭이 남지 않고 물리 키도 없습니다. 닫기 버튼이 없으면 뒤로가기
+          말고는 빠져나갈 길이 없어집니다. 넓은 화면은 백드롭과 Esc 가 있으므로 숨깁니다.
+        -->
+        <div class="flex items-center gap-1">
+          <hlm-command-input class="flex-1" placeholder="글과 문서 검색" />
+
+          <button
+            hlmBtn
+            variant="ghost"
+            size="icon-sm"
+            class="mr-1 shrink-0 md:hidden"
+            aria-label="검색 닫기"
+            (click)="closed.emit()"
+          >
+            <ng-icon name="lucideX" />
+          </button>
+        </div>
 
         <!--
           바닥과 천장 사이에서만 높이가 움직입니다. 바닥이 없으면 결과 1 건일 때 팔레트가
@@ -139,7 +158,7 @@ interface ResultGroup {
                   <button
                     hlmCommandItem
                     [value]="row.hit.slug"
-                    (selected)="go(row.hit)"
+                    (selected)="selected.emit(row.hit)"
                     class="flex-col items-start gap-0.5 text-left"
                   >
                     <span class="flex w-full min-w-0 items-baseline gap-2">
@@ -227,19 +246,28 @@ interface ResultGroup {
 })
 export class SiteSearch {
   public readonly open = input.required<boolean>();
-  public readonly openChange = output<boolean>();
 
-  private readonly router = inject(Router);
+  /** 주소가 들고 있는 검색어입니다. 열 때 입력창의 초기값이 됩니다. */
+  public readonly query = input('');
+
+  /** 입력이 멎은 뒤의 검색어입니다. 셸이 이 값을 주소에 반영합니다. */
+  public readonly queryChange = output<string>();
+
+  /** 닫기 요청입니다. 실제로 닫는 것은 셸의 이동이며 여기서 상태를 바꾸지 않습니다. */
+  public readonly closed = output<void>();
+
+  /** 결과 선택입니다. 이동은 라우터를 소유한 셸이 합니다. */
+  public readonly selected = output<SearchHit>();
 
   /** 입력창의 현재 값입니다. 화면에 즉시 반영되며 결과 계산에는 쓰지 않습니다. */
-  protected readonly query = signal('');
+  protected readonly draft = signal('');
 
   /**
    * 입력이 멎은 뒤의 값입니다. 결과와 강조 구간이 이 값을 따릅니다.
    * 두 신호를 나누는 이유는 입력창의 반응까지 늦추면 글자가 늦게 찍히는 것처럼 보이기 때문입니다.
    */
   protected readonly typedQuery = toSignal(
-    toObservable(this.query).pipe(debounceTime(TYPING_DELAY)),
+    toObservable(this.draft).pipe(debounceTime(TYPING_DELAY)),
     { initialValue: '' },
   );
 
@@ -293,26 +321,35 @@ export class SiteSearch {
       observer.observe(element);
       onCleanup(() => observer.disconnect());
     });
+
+    /*
+     * 열릴 때 한 번만 주소의 값을 입력창으로 가져옵니다.
+     *
+     * `linkedSignal` 로 주소를 계속 따라가게 하면 글자를 잃습니다. 라우터의 입력 바인딩은
+     * 첫 값 이후를 마이크로태스크로 전달하므로, 그 사이에 더 친 글자가 뒤늦게 도착한
+     * 이전 값으로 덮입니다.
+     */
+    effect(() => {
+      if (this.open()) untracked(() => this.draft.set(this.query()));
+    });
+
+    /*
+     * 입력이 멎으면 주소에 반영합니다. 닫힌 동안에는 보내지 않습니다.
+     * 이미 주소에 있는 값과 같으면 보내지 않아 의미 없는 이동을 만들지 않습니다.
+     */
+    effect(() => {
+      const text = this.typedQuery();
+
+      untracked(() => {
+        if (!this.open() || text === this.query()) return;
+        this.queryChange.emit(text);
+      });
+    });
   }
 
   protected onStateChange(state: BrnDialogState): void {
-    const open = state === 'open';
-
-    // 닫을 때 질의를 비웁니다. 남겨 두면 다시 열었을 때 이전 결과가 먼저 보입니다.
-    if (!open) this.query.set('');
-
-    this.openChange.emit(open);
-  }
-
-  protected go(hit: SearchHit): void {
-    this.openChange.emit(false);
-    this.query.set('');
-
-    // 절 일치일 때만 앵커를 붙입니다. 문서 제목으로 걸린 결과는 문서 맨 위가 맞습니다.
-    void this.router.navigate(
-      ROUTES.doc(hit.slug),
-      hit.section ? { fragment: hit.section.id } : {},
-    );
+    // 여는 것은 셸이 이미 알고 있습니다. 여기서는 닫힘만 알립니다.
+    if (state === 'closed') this.closed.emit();
   }
 
   private toRow(hit: SearchHit, query: string): ResultRow {
