@@ -65,7 +65,11 @@ import { SiteFooter } from './site-footer';
       class="bg-toolbar sticky top-0 z-40 border-b border-border backdrop-blur-lg backdrop-saturate-180"
     >
       <nav class="mx-auto flex h-14 max-w-[90rem] items-center gap-5 px-4">
-        <a [routerLink]="routes.home()" class="text-lg font-semibold tracking-tight">
+        <!-- 옮겨 오기 전 블로그와 같은 서체와 크기입니다. 사유는 ADR-0014 의 개정 절에 있습니다. -->
+        <a
+          [routerLink]="routes.home()"
+          class="font-logo text-2xl font-medium tracking-tight whitespace-nowrap"
+        >
           dev.goraebap
         </a>
 

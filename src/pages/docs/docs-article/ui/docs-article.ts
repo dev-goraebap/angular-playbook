@@ -123,9 +123,7 @@ export class DocsArticle {
    * 글에는 목차를 두지 않습니다. 규격 문서는 원하는 규칙을 찾아 들어가지만
    * 글은 처음부터 끝까지 읽는 것이 전제라 목차가 읽기를 돕지 않습니다.
    */
-  protected readonly showToc = computed(
-    () => this.toc().length > 0,
-  );
+  protected readonly showToc = computed(() => this.toc().length > 0);
 
   protected readonly routes = ROUTES;
 
@@ -147,9 +145,14 @@ export class DocsArticle {
     return `${year}년 ${Number(month)}월 ${Number(day)}일`;
   });
 
-  /** 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다. */
+  /**
+   * 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다.
+   *
+   * 상하 여백이 폭에 따라 갈립니다. 좁은 화면에서는 보이는 높이가 짧아 같은 48px 이
+   * 헤더와 본문 사이의 빈 자리로 읽힙니다. 문서 프레임의 py-8 과 같은 값을 씁니다.
+   */
   protected readonly containerClass = computed(() =>
-    this.isReading() ? 'mx-auto max-w-264 px-4 py-12' : '',
+    this.isReading() ? 'mx-auto max-w-264 px-4 py-8 md:py-12' : '',
   );
 
   /** 현재 읽고 있는 절입니다. 목차의 활성 표시에 사용합니다. */

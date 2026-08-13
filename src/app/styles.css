@@ -24,6 +24,7 @@
   --color-toolbar: var(--toolbar);
   --color-mark: var(--mark);
   --color-mark-foreground: var(--mark-foreground);
+  --font-logo: var(--logo);
 }
 
 /*
@@ -33,6 +34,15 @@
  */
 @import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
+
+/*
+ * 로고 전용 폰트입니다. 본문 어디에도 쓰지 않으며 상단 바의 사이트 이름 하나가 유일한 사용처입니다.
+ *
+ * 본문과 코드 두 종으로 고정한다는 ADR-0014 의 결정에 대한 예외이며, 사유는 이 이름이
+ * 옮겨 오기 전 블로그의 시각 정체성이라 서체가 곧 내용의 일부라는 점입니다.
+ * 굵기는 500 하나만 가져옵니다. 로고가 그 굵기 하나만 쓰므로 나머지는 받을 이유가 없습니다.
+ */
+@import '@fontsource/caveat/500.css';
 
 /*
  * 화면마다 스크롤 유무가 달라 콘텐츠 폭이 변하면 전환 시 레이아웃이 좌우로 흔들립니다.
@@ -74,6 +84,9 @@ html {
   --font-mono:
     'JetBrains Mono Variable', 'Pretendard Variable', ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;
+
+  /* 상단 바의 사이트 이름 전용입니다. 대체 서체를 cursive 로 두어 성격이 비슷한 것으로 떨어집니다. */
+  --logo: 'Caveat', cursive;
 
   /*
    * 기준 반경입니다. Spartan 프리셋이 이 값에 배수를 곱해 sm 부터 4xl 까지를 만듭니다.

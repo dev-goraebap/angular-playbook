@@ -28,7 +28,7 @@ const TAGS_PARAM = 'tags';
   template: `
     <div
       id="main"
-      class="mx-auto max-w-264 px-4 py-12 md:grid md:grid-cols-[minmax(0,40rem)_17.5rem] md:gap-16"
+      class="mx-auto max-w-264 px-4 py-8 md:grid md:grid-cols-[minmax(0,40rem)_17.5rem] md:gap-16 md:py-12"
     >
       <div>
         <section class="mb-8">
