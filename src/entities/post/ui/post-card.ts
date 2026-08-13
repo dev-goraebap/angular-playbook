@@ -20,7 +20,7 @@ import type { DocSummary } from '@/shared/markdown';
       class="group flex flex-col overflow-hidden rounded-2xl border border-border bg-background p-2 transition-colors hover:bg-accent"
     >
       <div
-        class="relative aspect-[2/1] w-full overflow-hidden rounded-xl"
+        class="relative aspect-2/1 w-full overflow-hidden rounded-xl"
         [style.background]="post().coverColor ?? 'var(--muted)'"
       >
         @if (post().cover; as cover) {

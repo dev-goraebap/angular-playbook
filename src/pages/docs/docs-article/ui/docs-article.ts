@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { injectActiveHeading } from '../lib/active-heading';
 import { injectMermaidDiagrams } from '../lib/mermaid-diagrams';
 import type { DocHeading } from '@/shared/markdown';
+import { ROUTES } from '@/shared/config';
 import type { DocArticle } from '../api/doc-article-resolver';
 
 @Component({
@@ -20,10 +21,55 @@ import type { DocArticle } from '../api/doc-article-resolver';
   template: `
     <div class="flex items-start gap-10" [class]="containerClass()">
       <article class="min-w-0 flex-1">
-        <!--
-          제목과 도입 문장은 본문이 소유합니다. 프론트매터의 title 과 description 은
-          문서 목록과 메타데이터가 쓰며 화면에 다시 표시하지 않습니다.
-        -->
+        @if (isReading()) {
+          <!--
+            글과 소개는 본문에 제목이 없습니다. 프론트매터가 제목과 표지의 유일한 출처이므로
+            화면이 그립니다. 표준 문서는 반대로 본문이 제목을 소유합니다.
+            규칙은 개발-환경.md 5.4절이 원본입니다.
+          -->
+          <header class="mb-10">
+            @if (summary().cover; as cover) {
+              <div
+                class="mb-8 aspect-2/1 w-full overflow-hidden rounded-xl"
+                [style.background]="summary().coverColor ?? 'var(--muted)'"
+              >
+                <img
+                  [src]="cover.src"
+                  [attr.srcset]="cover.srcset"
+                  sizes="(max-width: 768px) 100vw, 640px"
+                  [attr.width]="cover.width"
+                  [attr.height]="cover.height"
+                  [alt]="summary().title"
+                  decoding="async"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+            }
+
+            <h1 class="text-2xl leading-tight font-normal tracking-tight md:text-4xl">
+              {{ summary().title }}
+            </h1>
+
+            @if (summary().date) {
+              <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-foreground-secondary">
+                <time [dateTime]="summary().date">{{ publishedOn() }}</time>
+
+                @if (summary().tags?.length) {
+                  <span class="text-border">·</span>
+                  @for (tag of summary().tags; track tag) {
+                    <a
+                      [routerLink]="routes.tag(tag)"
+                      class="font-medium text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      #{{ tag }}
+                    </a>
+                  }
+                }
+              </div>
+            }
+          </header>
+        }
+
         <div #docBody class="doc-body prose" [innerHTML]="body()"></div>
       </article>
 
@@ -69,10 +115,24 @@ export class DocsArticle {
     () => !this.isReading() && this.toc().length > 0,
   );
 
+  protected readonly routes = ROUTES;
+
+  /** 목록과 헤더가 함께 쓰는 메타데이터입니다. */
+  protected readonly summary = computed(() => this.article().summary);
+
   /** 글과 단독 페이지는 처음부터 끝까지 읽는 화면입니다. */
-  private readonly isReading = computed(() => {
-    const kind = this.article().summary.kind;
+  protected readonly isReading = computed(() => {
+    const kind = this.summary().kind;
     return kind === 'post' || kind === 'page';
+  });
+
+  /** 발행일을 사람이 읽는 형태로 바꿉니다. 목록의 상대 표현과 달리 상세에서는 정확한 날짜를 보입니다. */
+  protected readonly publishedOn = computed(() => {
+    const date = this.summary().date;
+    if (!date) return '';
+
+    const [year, month, day] = date.split('-');
+    return `${year}년 ${Number(month)}월 ${Number(day)}일`;
   });
 
   /** 목차가 없으면 본문이 화면 전체를 쓰지 않도록 읽기 폭으로 가둡니다. */
