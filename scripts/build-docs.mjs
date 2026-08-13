@@ -1,6 +1,6 @@
 // docs/ 의 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
 // 생성물은 커밋하지 않으며 빌드와 검사 전에 항상 다시 만듭니다.
-// 규칙의 근거는 docs/references/개발-환경.md 가 원본입니다.
+// 규칙의 근거는 docs/architectures/frontend/angular/references/개발-환경.md 가 원본입니다.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { dirname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,14 +14,74 @@ const DOCS = join(ROOT, 'docs');
 const OUT = join(ROOT, 'src', 'shared', 'markdown', 'generated');
 
 /** 사이트에서 제외하는 파일입니다. 템플릿은 읽을 문서가 아닙니다. */
-const EXCLUDED = new Set(['decisions/0000-template.md']);
+const EXCLUDED = new Set(['architectures/frontend/angular/decisions/0000-template.md']);
 
-/** 문서가 속한 묶음입니다. 목록 화면의 구분과 정렬에 사용합니다. */
-const SECTIONS = {
-  root: { title: '개요', order: 0 },
+/** 스택 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다. */
+const GROUPS = {
   references: { title: '참조', order: 1 },
   decisions: { title: '결정 기록', order: 2 },
 };
+
+/** 스택을 묶는 영역입니다. 사이드바의 최상위 구분입니다. */
+const DOMAINS = {
+  frontend: { title: '프론트엔드', order: 0 },
+  backend: { title: '백엔드', order: 1 },
+};
+
+/**
+ * 문서의 위치를 경로에서 읽습니다. 계층을 프론트매터에 적지 않는 이유는
+ * 폴더 구조가 이미 그 정보를 담고 있어 두 벌이 되면 한쪽이 낡기 때문입니다.
+ *
+ * 인식하는 형태는 셋입니다.
+ *   architectures/index.md                          → 영역 개요
+ *   architectures/<domain>/<stack>/index.md         → 스택 개요
+ *   architectures/<domain>/<stack>/<group>/<파일>   → 스택의 문서
+ *
+ * URL 은 `/architectures/<stack>/<slug>` 로 조립합니다. domain 과 group 을 주소에 넣지 않는
+ * 이유는 스택 이름이 이미 유일하고, 계층은 사이드바가 보여주기 때문입니다.
+ */
+function locate(relPath) {
+  const parts = relPath.split('/');
+  const isIndex = parts.at(-1) === 'index.md';
+
+  if (parts[0] !== 'architectures') {
+    throw new Error(`${relPath} 이 인식할 수 없는 위치에 있습니다. architectures/ 아래에 두어야 합니다.`);
+  }
+
+  // architectures/index.md
+  if (parts.length === 2 && isIndex) {
+    return { domain: null, stack: null, group: null, kind: 'area' };
+  }
+
+  const [, domain, stack] = parts;
+
+  if (!(domain in DOMAINS)) {
+    throw new Error(`${relPath} 의 영역 "${domain}" 이 DOMAINS 에 정의되어 있지 않습니다.`);
+  }
+
+  // architectures/<domain>/<stack>/index.md
+  if (parts.length === 4 && isIndex) {
+    return { domain, stack, group: null, kind: 'stack' };
+  }
+
+  // architectures/<domain>/<stack>/<group>/<파일>
+  const group = parts[3];
+  if (parts.length === 5 && group in GROUPS) {
+    return { domain, stack, group, kind: 'document' };
+  }
+
+  throw new Error(
+    `${relPath} 의 위치를 해석할 수 없습니다. ` +
+      `스택 문서는 ${Object.keys(GROUPS).join(' 또는 ')} 아래에 두어야 합니다.`,
+  );
+}
+
+/** 사이트에서 쓰는 경로입니다. 문서의 식별자를 겸합니다. */
+function toUrlPath({ stack, kind }, slug) {
+  if (kind === 'area') return 'architectures';
+  if (kind === 'stack') return `architectures/${stack}`;
+  return `architectures/${stack}/${slug}`;
+}
 
 // ── 문서 수집 ───────────────────────────────────────────────────────────────
 
@@ -55,18 +115,15 @@ for (const relPath of paths) {
     }
   }
 
-  const section = relPath.includes('/') ? relPath.split('/')[0] : 'root';
-  if (!(section in SECTIONS)) {
-    throw new Error(`${relPath} 이 속한 묶음 "${section}" 이 SECTIONS 에 정의되어 있지 않습니다.`);
-  }
+  const position = locate(relPath);
 
   documents.push({
     path: relPath,
-    slug: data.slug,
+    slug: toUrlPath(position, data.slug),
     title: data.title,
     description: data.description,
     order: typeof data.order === 'number' ? data.order : 999,
-    section,
+    ...position,
     markdown: content,
   });
 }
@@ -77,7 +134,7 @@ const duplicated = documents
   .map((doc) => doc.slug)
   .filter((slug, index, all) => all.indexOf(slug) !== index);
 if (duplicated.length > 0) {
-  throw new Error(`슬러그가 중복되었습니다: ${[...new Set(duplicated)].join(', ')}`);
+  throw new Error(`경로가 중복되었습니다: ${[...new Set(duplicated)].join(', ')}`);
 }
 
 // ── 강조 블록 ───────────────────────────────────────────────────────────────
@@ -97,7 +154,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/references/개발-환경.md 5.2절입니다.
+ * 규칙의 원본은 docs/architectures/frontend/angular/references/개발-환경.md 5.2절입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -326,9 +383,9 @@ function linkSectionReferences(html, doc) {
   const linked = code.masked
     // 1) 링크 텍스트 안에 번호가 있는 경우: [아키텍처 9절](...) → 링크에 프래그먼트를 붙입니다.
     .replace(
-      /<a href="\/docs\/([^"#]+)"([^>]*)>((?:(?!<\/a>)[\s\S])*?)(\d+(?:\.\d+)*)절((?:(?!<\/a>)[\s\S])*?)<\/a>/g,
+      /<a href="\/([^"#]+)"([^>]*)>((?:(?!<\/a>)[\s\S])*?)(\d+(?:\.\d+)*)절((?:(?!<\/a>)[\s\S])*?)<\/a>/g,
       (match, slug, attrs, before, number, after) =>
-        '<a href="/docs/' +
+        '<a href="/' +
         slug +
         '#' +
         anchorOf(slug, number, match) +
@@ -343,11 +400,11 @@ function linkSectionReferences(html, doc) {
     )
     // 2) 링크 바로 뒤에 오는 경우: [개발 환경](...) 7절 → 그 문서의 7절로 보냅니다.
     .replace(
-      /(<a href="\/docs\/([^"#]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<\/a>)(\s*)(\d+(?:\.\d+)*)절/g,
+      /(<a href="\/([^"#]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<\/a>)(\s*)(\d+(?:\.\d+)*)절/g,
       (match, link, slug, gap, number) =>
         link +
         gap +
-        '<a href="/docs/' +
+        '<a href="/' +
         slug +
         '#' +
         anchorOf(slug, number, match) +
@@ -376,7 +433,7 @@ function linkSectionReferences(html, doc) {
  * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
  * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
  * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
- * 규칙의 원본은 docs/references/개발-환경.md 5.4절입니다.
+ * 규칙의 원본은 docs/architectures/frontend/angular/references/개발-환경.md 5.4절입니다.
  */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;
@@ -400,7 +457,7 @@ function resolveDocumentLink(href, fromPath) {
     );
   }
 
-  return fragment ? `/docs/${slug}#${fragment}` : `/docs/${slug}`;
+  return fragment ? `/${slug}#${fragment}` : `/${slug}`;
 }
 
 /** 문서 하나를 HTML 과 목차로 변환합니다. */
@@ -460,9 +517,20 @@ function render(doc) {
 
 // ── 출력 ────────────────────────────────────────────────────────────────────
 
+/** 사이드바에 나타나는 순서입니다. 영역 개요가 먼저 오고 스택 안에서는 개요가 앞섭니다. */
+const KIND_ORDER = { area: 0, stack: 1, document: 2 };
+
 const sorted = [...documents].sort((a, b) => {
-  const sectionGap = SECTIONS[a.section].order - SECTIONS[b.section].order;
-  return sectionGap !== 0 ? sectionGap : a.order - b.order;
+  const domainGap = (DOMAINS[a.domain]?.order ?? -1) - (DOMAINS[b.domain]?.order ?? -1);
+  if (domainGap !== 0) return domainGap;
+
+  if (a.stack !== b.stack) return (a.stack ?? '').localeCompare(b.stack ?? '');
+
+  const kindGap = KIND_ORDER[a.kind] - KIND_ORDER[b.kind];
+  if (kindGap !== 0) return kindGap;
+
+  const groupGap = (GROUPS[a.group]?.order ?? 0) - (GROUPS[b.group]?.order ?? 0);
+  return groupGap !== 0 ? groupGap : a.order - b.order;
 });
 
 /*
@@ -479,8 +547,12 @@ mkdirSync(join(OUT, 'content'), { recursive: true });
 const banner = '// 이 파일은 scripts/build-docs.mjs 가 생성합니다. 직접 수정하지 않습니다.\n';
 
 for (const { doc, html, toc } of rendered) {
+  // 슬러그가 경로이므로 생성물도 같은 계층으로 놓습니다. 파일을 찾을 때 주소와 대응됩니다.
+  const file = join(OUT, 'content', `${doc.slug}.ts`);
+  mkdirSync(dirname(file), { recursive: true });
+
   writeFileSync(
-    join(OUT, 'content', `${doc.slug}.ts`),
+    file,
     `${banner}
 export const html = ${JSON.stringify(html)};
 
@@ -490,21 +562,29 @@ export const toc = ${JSON.stringify(toc, null, 2)};
   );
 }
 
-const summaries = sorted.map(({ slug, title, description, section }) => ({
+const summaries = sorted.map(({ slug, title, description, domain, stack, group, kind }) => ({
   slug,
   title,
   description,
-  section,
+  domain,
+  stack,
+  group,
+  kind,
 }));
 
 writeFileSync(
   join(OUT, 'docs-index.ts'),
   `${banner}
 export interface DocSummary {
+  /** 사이트 경로이자 문서의 식별자입니다. 예: architectures/angular/performance */
   readonly slug: string;
   readonly title: string;
   readonly description: string;
-  readonly section: DocSection;
+  /** 영역 개요는 domain 과 stack 을 갖지 않고, 스택 개요는 group 을 갖지 않습니다. */
+  readonly domain: DocDomain | null;
+  readonly stack: string | null;
+  readonly group: DocGroup | null;
+  readonly kind: DocKind;
 }
 
 export interface DocHeading {
@@ -518,12 +598,24 @@ export interface DocContent {
   readonly toc: readonly DocHeading[];
 }
 
-export type DocSection = ${Object.keys(SECTIONS)
+export type DocKind = 'area' | 'stack' | 'document';
+
+export type DocDomain = ${Object.keys(DOMAINS)
     .map((key) => `'${key}'`)
     .join(' | ')};
 
-export const DOC_SECTIONS: Record<DocSection, string> = ${JSON.stringify(
-    Object.fromEntries(Object.entries(SECTIONS).map(([key, value]) => [key, value.title])),
+export type DocGroup = ${Object.keys(GROUPS)
+    .map((key) => `'${key}'`)
+    .join(' | ')};
+
+export const DOC_DOMAINS: Record<DocDomain, string> = ${JSON.stringify(
+    Object.fromEntries(Object.entries(DOMAINS).map(([key, value]) => [key, value.title])),
+    null,
+    2,
+  )};
+
+export const DOC_GROUPS: Record<DocGroup, string> = ${JSON.stringify(
+    Object.fromEntries(Object.entries(GROUPS).map(([key, value]) => [key, value.title])),
     null,
     2,
   )};

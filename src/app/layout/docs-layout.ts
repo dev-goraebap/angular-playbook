@@ -13,20 +13,42 @@ import {
   HlmSheetPortal,
   HlmSheetTitle,
 } from '@/shared/ui/sheet';
-import { DOC_SECTIONS, DOC_SUMMARIES, type DocSection, type DocSummary } from '@/shared/markdown';
+import {
+  DOC_DOMAINS,
+  DOC_GROUPS,
+  DOC_SUMMARIES,
+  type DocDomain,
+  type DocGroup,
+  type DocSummary,
+} from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
 import { ThemeToggle } from '../theme-toggle';
 
+/** 스택 안에서 문서를 나누는 묶음입니다. 참조와 결정 기록이 여기 해당합니다. */
 interface NavigationGroup {
-  readonly section: DocSection;
+  readonly group: DocGroup;
   readonly title: string;
   readonly documents: readonly DocSummary[];
+}
+
+/** 스택 하나입니다. 개요 문서 하나와 그 아래 묶음들로 구성됩니다. */
+interface NavigationStack {
+  readonly stack: string;
+  readonly overview: DocSummary;
+  readonly groups: readonly NavigationGroup[];
+}
+
+/** 사이드바 최상위 구분입니다. 프론트엔드와 백엔드가 여기 해당합니다. */
+interface NavigationDomain {
+  readonly domain: DocDomain;
+  readonly title: string;
+  readonly stacks: readonly NavigationStack[];
 }
 
 /**
  * 문서형 레이아웃입니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
  *
- * 골격 종류와 스크롤 컨테이너의 대응은 docs/references/레이아웃.md 2절이 원본입니다.
+ * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/frontend/angular/references/레이아웃.md 2절이 원본입니다.
  * `topbar` 는 문서 전체가 스크롤 컨테이너이므로 헤더의 `sticky` 가 뷰포트를 기준으로 동작합니다.
  * 골격 전환을 제공하지 않으므로 3.1절의 템플릿 분기 구조는 아직 두지 않습니다.
  *
@@ -79,7 +101,7 @@ interface NavigationGroup {
             <ng-icon name="lucideMenu" />
           </button>
 
-          <a [routerLink]="routes.docsHome()" class="font-semibold tracking-tight">
+          <a [routerLink]="routes.home()" class="font-semibold tracking-tight">
             Angular Playbook
           </a>
           <span class="hidden text-sm text-muted-foreground sm:inline">
@@ -140,21 +162,56 @@ interface NavigationGroup {
     <!-- 데스크탑 사이드바와 모바일 시트가 같은 목록을 공유합니다. 레이아웃.md 3절 -->
     <ng-template #navigation>
       <ul class="flex flex-col gap-6">
-        @for (group of groups(); track group.section) {
+        @if (overview(); as area) {
+          <li>
+            <a
+              [routerLink]="routes.doc(area.slug)"
+              [routerLinkActiveOptions]="{ exact: true }"
+              routerLinkActive="bg-accent text-accent-foreground"
+              class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {{ area.title }}
+            </a>
+          </li>
+        }
+
+        @for (domain of domains(); track domain.domain) {
           <li>
             <h2 class="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-              {{ group.title }}
+              {{ domain.title }}
             </h2>
-            <ul class="flex flex-col gap-0.5">
-              @for (doc of group.documents; track doc.slug) {
+
+            <ul class="flex flex-col gap-3">
+              @for (stack of domain.stacks; track stack.stack) {
                 <li>
                   <a
-                    [routerLink]="routes.docsArticle(doc.slug)"
+                    [routerLink]="routes.doc(stack.overview.slug)"
+                    [routerLinkActiveOptions]="{ exact: true }"
                     routerLinkActive="bg-accent text-accent-foreground"
-                    class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    {{ doc.title }}
+                    {{ stack.overview.title }}
                   </a>
+
+                  @for (group of stack.groups; track group.group) {
+                    <!-- 묶음 제목은 스택 아래 한 단계 들여 씁니다. 링크가 아니라 구분입니다. -->
+                    <p class="mt-2 mb-1 pl-2 text-xs text-foreground-secondary">
+                      {{ group.title }}
+                    </p>
+                    <ul class="flex flex-col gap-0.5 border-l border-border pl-2">
+                      @for (doc of group.documents; track doc.slug) {
+                        <li>
+                          <a
+                            [routerLink]="routes.doc(doc.slug)"
+                            routerLinkActive="bg-accent text-accent-foreground"
+                            class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {{ doc.title }}
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  }
                 </li>
               }
             </ul>
@@ -173,15 +230,48 @@ export class DocsLayout {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly groups = computed<readonly NavigationGroup[]>(() =>
-    (Object.keys(DOC_SECTIONS) as DocSection[])
-      .map((section) => ({
-        section,
-        title: DOC_SECTIONS[section],
-        documents: DOC_SUMMARIES.filter((doc) => doc.section === section),
-      }))
-      .filter((group) => group.documents.length > 0),
+  /** 영역 개요입니다. 사이드바 맨 위에 단독으로 놓입니다. */
+  protected readonly overview = computed(() =>
+    DOC_SUMMARIES.find((doc) => doc.kind === 'area'),
   );
+
+  /**
+   * 사이드바 트리입니다. 문서가 없는 묶음과 개요가 없는 스택은 빼므로,
+   * 준비 중인 스택은 개요 하나만 링크로 나타납니다.
+   */
+  protected readonly domains = computed<readonly NavigationDomain[]>(() =>
+    (Object.keys(DOC_DOMAINS) as DocDomain[])
+      .map((domain) => ({
+        domain,
+        title: DOC_DOMAINS[domain],
+        stacks: this.stacksOf(domain),
+      }))
+      .filter((entry) => entry.stacks.length > 0),
+  );
+
+  private stacksOf(domain: DocDomain): readonly NavigationStack[] {
+    const inDomain = DOC_SUMMARIES.filter((doc) => doc.domain === domain);
+    const names = [...new Set(inDomain.map((doc) => doc.stack).filter((name) => name !== null))];
+
+    return names
+      .map((stack) => {
+        const documents = inDomain.filter((doc) => doc.stack === stack);
+        const overview = documents.find((doc) => doc.kind === 'stack');
+
+        return overview ? { stack, overview, groups: this.groupsOf(documents) } : null;
+      })
+      .filter((entry) => entry !== null);
+  }
+
+  private groupsOf(documents: readonly DocSummary[]): readonly NavigationGroup[] {
+    return (Object.keys(DOC_GROUPS) as DocGroup[])
+      .map((group) => ({
+        group,
+        title: DOC_GROUPS[group],
+        documents: documents.filter((doc) => doc.group === group),
+      }))
+      .filter((entry) => entry.documents.length > 0);
+  }
 
   constructor() {
     // 링크 클릭뿐 아니라 뒤로가기로 이동한 경우에도 시트를 닫습니다.

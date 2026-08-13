@@ -1,9 +1,12 @@
 export {
   DOC_CONTENT_LOADERS,
-  DOC_SECTIONS,
+  DOC_DOMAINS,
+  DOC_GROUPS,
   DOC_SUMMARIES,
   type DocContent,
+  type DocDomain,
+  type DocGroup,
   type DocHeading,
-  type DocSection,
+  type DocKind,
   type DocSummary,
 } from './generated/docs-index';

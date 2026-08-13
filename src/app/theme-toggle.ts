@@ -11,13 +11,13 @@ const STORAGE_KEY = 'theme';
 
 /**
  * 라이트와 다크를 전환합니다. 클래스 부여 로직을 `app` 계층이 소유한다는 규칙은
- * docs/references/디자인-시스템과-토큰.md 7절이 원본입니다.
+ * docs/architectures/frontend/angular/references/디자인-시스템과-토큰.md 7절이 원본입니다.
  *
  * 토큰이 `light-dark()` 로 정의되어 있으므로 이 컴포넌트가 하는 일은 루트의 `color-scheme` 을
  * 바꾸는 것뿐입니다. 선택하지 않은 상태에서는 클래스를 붙이지 않아 시스템 설정이 그대로 적용됩니다.
  *
  * `localStorage` 와 `document` 는 서버에 없으므로 접근을 `afterNextRender` 안으로 제한합니다.
- * 근거는 docs/references/렌더링-전략.md 2절에 있습니다.
+ * 근거는 docs/architectures/frontend/angular/references/렌더링-전략.md 2절에 있습니다.
  */
 @Component({
   selector: 'app-theme-toggle',
