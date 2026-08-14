@@ -6,6 +6,7 @@ import { lucideSearch } from '@ng-icons/lucide';
 import { NAVIGATION, ROUTES } from '@/shared/config';
 import type { SearchHit } from '@/shared/markdown';
 import { HlmButton } from '@/shared/ui/button';
+import { NavigationVeil, NavigationVeilSlot } from '../navigation-veil';
 import { SiteSearch } from '../site-search';
 import { ThemeToggle } from '../theme-toggle';
 import { BottomNav } from './bottom-nav';
@@ -38,6 +39,7 @@ import { SiteFooter } from './site-footer';
     RouterLinkActive,
     NgIcon,
     HlmButton,
+    NavigationVeil,
     ThemeToggle,
     BottomNav,
     SiteFooter,
@@ -46,7 +48,8 @@ import { SiteFooter } from './site-footer';
   providers: [provideIcons({ lucideSearch })],
   host: {
     // 하단 네비가 고정 요소라 문서 끝이 그 아래로 들어갑니다. 막대 높이만큼 본문을 띄웁니다.
-    class: 'flex min-h-dvh flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0',
+    class:
+      'flex min-h-dvh flex-col pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))] md:pb-0',
     '(document:keydown)': 'onKeydown($event)',
   },
   template: `
@@ -62,7 +65,7 @@ import { SiteFooter } from './site-footer';
       라이트와 다크에 같은 값이 적용되어 다크에서 뒤 요소가 비쳐 보입니다.
     -->
     <header
-      class="bg-toolbar sticky top-0 z-40 border-b border-border backdrop-blur-lg backdrop-saturate-180"
+      class="bg-toolbar sticky top-0 z-40 border-b border-border backdrop-blur-lg backdrop-saturate-180 [view-transition-name:site-header]"
     >
       <nav class="mx-auto flex h-14 max-w-[90rem] items-center gap-5 px-4">
         <!-- 옮겨 오기 전 블로그와 같은 서체와 크기입니다. 사유는 ADR-0014 의 개정 절에 있습니다. -->
@@ -107,8 +110,17 @@ import { SiteFooter } from './site-footer';
       </nav>
     </header>
 
-    <!-- 본문이 짧아도 푸터가 화면 하단에 붙도록 남은 높이를 차지합니다. -->
-    <main class="flex-1">
+    <!--
+      본문이 짧아도 푸터가 화면 하단에 붙도록 남은 높이를 차지합니다.
+
+      베일의 기준 상자이기도 합니다. 헤더·푸터·하단 네비가 이 밖에 있으므로
+      전환 중에도 그 셋은 덮이지 않습니다. 사이드바를 함께 그리는 프레임은
+      자기 콘텐츠 열에 베일을 두므로 그동안 여기 것은 물러납니다.
+    -->
+    <main class="relative flex-1">
+      @if (!veilSlot.claimedByFrame()) {
+        <app-navigation-veil />
+      }
       <router-outlet />
     </main>
 
@@ -142,6 +154,9 @@ export class AppShell {
 
   protected readonly routes = ROUTES;
   protected readonly navigation = NAVIGATION;
+
+  /** 안쪽 프레임이 베일 자리를 가져갔는지만 봅니다. 어느 화면인지는 묻지 않습니다. */
+  protected readonly veilSlot = inject(NavigationVeilSlot);
 
   /** 검색 오버레이의 열림 상태입니다. 지연 청크의 로드 조건도 겸합니다. */
   protected readonly searchOpen = computed(() => this.q() !== undefined);

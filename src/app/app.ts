@@ -1,18 +1,19 @@
 import { DOCUMENT, ViewportScroller } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { NavigationVeil } from './navigation-veil';
 
 /** 앵커 이동 시 확보할 상단 여백입니다. 본문 헤딩의 `scroll-margin-top` 과 같은 값입니다. */
 const ANCHOR_OFFSET_REM = 5;
 
+/*
+ * 베일을 여기에 두지 않습니다. 이 자리는 화면 전체이므로 헤더와 사이드바까지 덮게 되고,
+ * 대기 중에도 이동할 수 있어야 한다는 규칙이 깨집니다(로딩-전략.md 7.1절).
+ * 콘텐츠 영역이 어디까지인지 아는 것은 셸과 프레임이므로 그쪽이 자리를 정합니다.
+ */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NavigationVeil],
-  template: `
-    <app-navigation-veil />
-    <router-outlet />
-  `,
+  imports: [RouterOutlet],
+  template: `<router-outlet />`,
 })
 export class App {
   private readonly document = inject(DOCUMENT);

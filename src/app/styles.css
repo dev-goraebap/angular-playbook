@@ -64,6 +64,90 @@ html {
 }
 
 /*
+ * 이미지는 다 받아진 뒤에 드러납니다. 표시를 남기는 쪽은 app 계층이며 규격은
+ * docs/architectures/frontend/angular/references/성능.md 4.2절이 원본입니다.
+ *
+ * 감추는 규칙을 `.js` 아래에 두는 이유는 실패 방향을 정하기 위함입니다. 감추기를 기본값으로
+ * 두면 스크립트가 없거나 실패한 환경에서 이미지가 영영 보이지 않습니다. 프리렌더된 HTML 에
+ * 이미지가 이미 들어 있으므로 그때도 내용은 온전해야 합니다.
+ */
+/*
+ * 화면 전환은 은은한 크로스페이드만 씁니다. 규격과 근거는
+ * docs/architectures/frontend/angular/references/로딩-전략.md 3.4절이 원본입니다.
+ *
+ * 전역 스타일에 두어야 합니다. 컴포넌트 스타일은 캡슐화되어 뷰 전환 의사 요소에 닿지 않습니다.
+ *
+ * 나가는 쪽을 들어오는 쪽보다 짧게 둡니다. 같은 길이로 두면 두 화면이 겹쳐 보이는 구간이
+ * 길어져 내용이 흐려 보입니다.
+ */
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+::view-transition-old(root) {
+  animation: page-fade-out 120ms ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: page-fade-in 180ms ease-out both;
+}
+
+/*
+ * 움직임을 줄이도록 설정한 사용자에게는 전환 없이 곧바로 교체합니다.
+ * 크로스페이드는 위치 이동이 없어 비교적 안전한 편이지만, 설정을 밝힌 이상 따릅니다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+@keyframes image-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.js img:not([data-loaded]) {
+  opacity: 0;
+}
+
+/*
+ * 전환이 아니라 애니메이션으로 드러냅니다. `transition` 으로 만들면 이미지에 붙은
+ * `transition-transform` 같은 유틸리티가 `transition-property` 를 통째로 덮어 페이드가
+ * 사라집니다. 클래스가 요소 선택자보다 우선하므로 전역 규칙이 지는 쪽입니다.
+ * 애니메이션은 그 속성과 겹치지 않아 호버 전환과 함께 쓸 수 있습니다.
+ */
+.js img[data-loaded] {
+  animation: image-fade-in 700ms ease-in-out both;
+}
+
+/* 움직임을 줄이도록 설정한 사용자에게는 전환 없이 곧바로 드러냅니다. */
+@media (prefers-reduced-motion: reduce) {
+  .js img[data-loaded] {
+    animation: none;
+  }
+}
+
+/*
  * 토큰을 light-dark() 로 한 번만 정의합니다. 어느 값을 쓸지는 color-scheme 이 결정하므로
  * 라이트와 다크의 값이 항상 같은 자리에 붙어 있고 한쪽만 고치는 실수가 생기지 않습니다.
  *
@@ -87,6 +171,12 @@ html {
 
   /* 상단 바의 사이트 이름 전용입니다. 대체 서체를 cursive 로 두어 성격이 비슷한 것으로 떨어집니다. */
   --logo: 'Caveat', cursive;
+
+  /*
+   * 좁은 화면 하단 네비의 높이입니다. 막대 자신과 본문의 아래 여백, 그리고 막대 위에 놓이는
+   * 요소가 모두 이 값을 읽습니다. 세 곳에 숫자를 적어 두면 하나를 고칠 때 나머지가 어긋납니다.
+   */
+  --bottom-nav-height: 3.5rem;
 
   /*
    * 기준 반경입니다. Spartan 프리셋이 이 값에 배수를 곱해 sm 부터 4xl 까지를 만듭니다.

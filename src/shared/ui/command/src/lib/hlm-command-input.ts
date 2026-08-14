@@ -15,12 +15,12 @@ import { classes } from '@/shared/ui/utils';
   },
   template: `
     <hlm-input-group
-      class="bg-input/30 border-input/30 h-8! rounded-lg! shadow-none! *:data-[slot=input-group-addon]:pl-2!"
+      class="bg-input/30 border-input/30 h-8! pointer-coarse:h-11! rounded-lg! shadow-none! *:data-[slot=input-group-addon]:pl-2!"
     >
       <input
         brnCommandInput
         data-slot="command-input"
-        class="w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+        class="w-full text-sm outline-hidden pointer-coarse:text-base disabled:cursor-not-allowed disabled:opacity-50"
         [id]="inputId()"
         [placeholder]="placeholder()"
       />

@@ -11,8 +11,30 @@
       styles.css 의 `color-scheme: light dark` 가 시스템 설정을 따릅니다.
       하이드레이션 이후에 적용하면 잘못된 모드가 잠시 보이므로 여기에 둡니다.
     -->
+    <!--
+      이미지가 다 받아지면 표시를 남깁니다. 나타나는 방식은 styles.css 가 정하고 여기서는
+      시점만 알립니다. 규격은 docs/architectures/frontend/angular/references/성능.md 4.2절입니다.
+
+      프레임워크가 아니라 이 자리에 두는 이유는 순서 때문입니다. 부팅 이후에 걸면 프리렌더된
+      HTML 의 이미지가 하이드레이션이 끝날 때까지 감춰진 채 남아 첫 화면이 늦어 보입니다.
+      head 는 body 가 파싱되기 전이므로 아직 어떤 이미지도 존재하지 않고, 따라서 리스너가
+      항상 먼저 걸립니다. 이미 끝난 이미지를 따로 훑을 필요도 없습니다.
+    -->
     <script>
       (function () {
+        // 스크립트가 도는 환경임을 첫 페인트 전에 표시합니다. 이미지 페이드인이 이 표시에
+        // 걸려 있어, 스크립트가 없거나 실패하면 이미지가 감춰지지 않고 그대로 보입니다.
+        document.documentElement.classList.add('js');
+
+        // load 는 버블링하지 않으므로 캡처 단계에서 받습니다. 실패도 완료로 취급하지 않으면
+        // 깨진 이미지가 투명한 채 남아 대체 텍스트조차 보이지 않습니다.
+        function settled(event) {
+          var target = event.target;
+          if (target && target.tagName === 'IMG') target.setAttribute('data-loaded', '');
+        }
+        document.addEventListener('load', settled, true);
+        document.addEventListener('error', settled, true);
+
         try {
           var choice = localStorage.getItem('theme');
           if (choice === 'dark' || choice === 'light') {

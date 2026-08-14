@@ -20,7 +20,7 @@ import { NAVIGATION } from '@/shared/config';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class:
-      'bg-toolbar fixed inset-x-0 bottom-0 z-40 border-t border-border backdrop-blur-lg backdrop-saturate-180 md:hidden',
+      'bg-toolbar fixed inset-x-0 bottom-0 z-40 border-t border-border backdrop-blur-lg backdrop-saturate-180 md:hidden [view-transition-name:bottom-nav]',
   },
   template: `
     <!--
@@ -35,7 +35,7 @@ import { NAVIGATION } from '@/shared/config';
           [routerLink]="item.path"
           [routerLinkActiveOptions]="{ exact: item.exact }"
           routerLinkActive="text-primary"
-          class="flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] text-foreground-secondary transition-colors"
+          class="flex h-[var(--bottom-nav-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] text-foreground-secondary transition-colors"
         >
           <ng-icon [name]="item.icon" class="text-lg" />
           {{ item.label }}
@@ -44,7 +44,7 @@ import { NAVIGATION } from '@/shared/config';
 
       <button
         type="button"
-        class="flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] text-foreground-secondary transition-colors"
+        class="flex h-[var(--bottom-nav-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[0.6875rem] text-foreground-secondary transition-colors"
         (click)="searchRequested.emit()"
       >
         <ng-icon name="lucideSearch" class="text-lg" />
