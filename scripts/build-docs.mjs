@@ -38,7 +38,6 @@ const DOMAINS = {
  *   architectures/<domain>/<stack>/index.md         → 스택 개요
  *   architectures/<domain>/<stack>/<group>/<파일>   → 스택의 문서
  *   posts/<slug>/index.md                           → 글
- *   about/index.md                                  → 단독 페이지
  *
  * 글이 폴더 형태인 이유는 이미지를 본문 옆에 두기 위함입니다. 자산이 문서와 함께 움직입니다.
  *
@@ -60,14 +59,9 @@ function locate(relPath) {
     );
   }
 
-  // about/index.md — 목록에 속하지 않는 단독 페이지입니다.
-  if (parts[0] === 'about' && parts.length === 2 && isIndex) {
-    return { area: 'about', domain: null, stack: null, group: null, kind: 'page' };
-  }
-
   if (parts[0] !== 'architectures') {
     throw new Error(
-      `${relPath} 이 인식할 수 없는 위치에 있습니다. architectures/ · posts/ · about/ 중 한 곳에 두어야 합니다.`,
+      `${relPath} 이 인식할 수 없는 위치에 있습니다. architectures/ 또는 posts/ 에 두어야 합니다.`,
     );
   }
 
@@ -101,7 +95,6 @@ function locate(relPath) {
 
 /** 사이트에서 쓰는 경로입니다. 문서의 식별자를 겸합니다. */
 function toUrlPath({ stack, kind }, relPath, slug) {
-  if (kind === 'page') return 'about';
   if (kind === 'post') return `posts/${relPath.split('/')[1]}`;
   if (kind === 'area') return 'architectures';
   if (kind === 'stack') return `architectures/${stack}`;
@@ -172,11 +165,9 @@ for (const relPath of paths) {
   const { data, content } = matter(raw);
   const position = locate(relPath);
 
-  // 글과 단독 페이지의 슬러그는 폴더가 정하므로 프론트매터에 적지 않습니다.
+  // 글의 슬러그는 폴더가 정하므로 프론트매터에 적지 않습니다.
   const required =
-    position.kind === 'post' || position.kind === 'page'
-      ? ['title', 'description']
-      : ['slug', 'title', 'description'];
+    position.kind === 'post' ? ['title', 'description'] : ['slug', 'title', 'description'];
 
   for (const field of required) {
     if (!data[field]) {
@@ -837,9 +828,9 @@ export interface DocContent {
   readonly toc: readonly DocHeading[];
 }
 
-export type DocArea = 'architectures' | 'posts' | 'about';
+export type DocArea = 'architectures' | 'posts';
 
-export type DocKind = 'area' | 'stack' | 'document' | 'post' | 'page';
+export type DocKind = 'area' | 'stack' | 'document' | 'post';
 
 export type DocDomain = ${Object.keys(DOMAINS)
     .map((key) => `'${key}'`)
@@ -910,29 +901,24 @@ function collectCodeTokens(markdown, toc) {
  *
  * docs-index 와 파일을 나누는 이유는 지연 로드 때문입니다. 같은 파일에 두면
  * 사이드바가 DOC_SUMMARIES 를 쓰는 순간 인덱스도 초기 번들로 따라 들어옵니다.
- *
- * 소개는 색인에 넣지 않습니다. 상단 메뉴와 하단 네비에 항상 나와 있어 찾을 필요가 없고,
- * 자기소개 문장의 흔한 낱말이 문서 결과 사이에 섞여 목록을 흐립니다.
  */
-const searchEntries = rendered
-  .filter(({ doc }) => doc.area !== 'about')
-  .map(({ doc, toc }) => {
-    const code = collectCodeTokens(doc.markdown, toc);
+const searchEntries = rendered.map(({ doc, toc }) => {
+  const code = collectCodeTokens(doc.markdown, toc);
 
-    return {
-      slug: doc.slug,
-      title: doc.title,
-      description: doc.description,
-      area: doc.area,
-      ...(doc.tags?.length ? { tags: doc.tags } : {}),
-      ...(code.lead.length ? { code: code.lead } : {}),
-      sections: toc.map(({ id, text }, index) => ({
-        id,
-        text,
-        ...(code.sections[index].length ? { code: code.sections[index] } : {}),
-      })),
-    };
-  });
+  return {
+    slug: doc.slug,
+    title: doc.title,
+    description: doc.description,
+    area: doc.area,
+    ...(doc.tags?.length ? { tags: doc.tags } : {}),
+    ...(code.lead.length ? { code: code.lead } : {}),
+    sections: toc.map(({ id, text }, index) => ({
+      id,
+      text,
+      ...(code.sections[index].length ? { code: code.sections[index] } : {}),
+    })),
+  };
+});
 
 writeFileSync(
   join(OUT, 'search-index.ts'),

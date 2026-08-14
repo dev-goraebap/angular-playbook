@@ -18,5 +18,4 @@ export interface NavigationItem {
 export const NAVIGATION: readonly NavigationItem[] = [
   { path: '/', label: '블로그', exact: true, icon: 'lucideNewspaper' },
   { path: '/architectures', label: '아키텍처', exact: false, icon: 'lucideLayers' },
-  { path: '/about', label: '소개', exact: false, icon: 'lucideUser' },
 ];

@@ -34,7 +34,7 @@ import type { DocArticle } from '../api/doc-article-resolver';
           </a>
 
           <!--
-            글과 소개는 본문에 제목이 없습니다. 프론트매터가 제목과 표지의 유일한 출처이므로
+            글은 본문에 제목이 없습니다. 프론트매터가 제목과 표지의 유일한 출처이므로
             화면이 그립니다. 표준 문서는 반대로 본문이 제목을 소유합니다.
             규칙은 개발-환경.md 5.4절이 원본입니다.
           -->
@@ -130,11 +130,8 @@ export class DocsArticle {
   /** 목록과 헤더가 함께 쓰는 메타데이터입니다. */
   protected readonly summary = computed(() => this.article().summary);
 
-  /** 글과 단독 페이지는 처음부터 끝까지 읽는 화면입니다. */
-  protected readonly isReading = computed(() => {
-    const kind = this.summary().kind;
-    return kind === 'post' || kind === 'page';
-  });
+  /** 글은 처음부터 끝까지 읽는 화면입니다. 표준 문서와 헤더 구성과 여백이 다릅니다. */
+  protected readonly isReading = computed(() => this.summary().kind === 'post');
 
   /** 발행일을 사람이 읽는 형태로 바꿉니다. 목록의 상대 표현과 달리 상세에서는 정확한 날짜를 보입니다. */
   protected readonly publishedOn = computed(() => {

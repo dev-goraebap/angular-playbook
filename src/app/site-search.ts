@@ -27,16 +27,12 @@ import {
 import { HlmButton } from '@/shared/ui/button';
 import { HlmCommandImports } from '@/shared/ui/command';
 
-/**
- * 결과 묶음의 순서입니다. 상단 메뉴와 같은 차례라 목록에서 위치를 예측할 수 있습니다.
- * 소개는 빠져 있습니다. 색인 자체에 담지 않으므로 여기에 두어도 결과가 나오지 않습니다.
- */
+/** 결과 묶음의 순서입니다. 상단 메뉴와 같은 차례라 목록에서 위치를 예측할 수 있습니다. */
 const AREA_ORDER: readonly DocArea[] = ['posts', 'architectures'];
 
 const AREA_LABELS: Record<DocArea, string> = {
   posts: '글',
   architectures: '아키텍처',
-  about: '소개',
 };
 
 /**

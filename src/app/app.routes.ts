@@ -33,11 +33,6 @@ export const routes: Routes = [
         runGuardsAndResolvers: 'pathParamsChange',
       },
       {
-        path: 'about',
-        loadComponent: () => import('@/pages/docs/docs-article').then((m) => m.DocsArticle),
-        resolve: { article: docArticleResolver },
-      },
-      {
         path: 'architectures',
         loadComponent: () => import('./layout/docs-layout').then((m) => m.DocsLayout),
         children: [
