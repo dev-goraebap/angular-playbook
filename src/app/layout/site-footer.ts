@@ -14,7 +14,7 @@ import { lucideGithub } from '@ng-icons/lucide';
   imports: [NgIcon],
   providers: [provideIcons({ lucideGithub })],
   template: `
-    <footer class="mt-auto border-t border-border py-8 text-sm text-muted-foreground [view-transition-name:site-footer]">
+    <footer class="mt-auto border-t border-border py-8 text-sm text-muted-foreground">
       <div class="mx-auto flex max-w-264 items-center justify-between px-4">
         <span>&copy; {{ year }} dev.goraebap</span>
 

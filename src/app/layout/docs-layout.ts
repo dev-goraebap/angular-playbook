@@ -1,10 +1,10 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, map } from 'rxjs';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideMenu } from '@ng-icons/lucide';
+import { lucideChevronRight, lucideMenu } from '@ng-icons/lucide';
 import { HlmButton } from '@/shared/ui/button';
 import {
   HlmSheet,
@@ -24,11 +24,19 @@ import {
 import { ROUTES } from '@/shared/config';
 import { NavigationVeil, NavigationVeilSlot } from '../navigation-veil';
 
+/** 주소에서 문서의 슬러그를 얻습니다. 쿼리와 프래그먼트를 떼고 앞 슬래시를 없앱니다. */
+function slugOf(url: string): string {
+  return url.split(/[?#]/)[0].replace(/^\//, '');
+}
+
 /** 스택 안에서 문서를 나누는 묶음입니다. 참조와 결정 기록이 여기 해당합니다. */
 interface NavigationGroup {
   readonly group: DocGroup;
   readonly title: string;
   readonly documents: readonly DocSummary[];
+  /** 스택 안에서 묶음을 가리키는 열쇠입니다. 묶음 이름은 스택마다 반복되므로 함께 묶습니다. */
+  readonly key: string;
+  readonly open: boolean;
 }
 
 /** 스택 하나입니다. 개요 문서 하나와 그 아래 묶음들로 구성됩니다. */
@@ -74,7 +82,7 @@ interface NavigationDomain {
     HlmSheetTitle,
     NavigationVeil,
   ],
-  providers: [provideIcons({ lucideMenu })],
+  providers: [provideIcons({ lucideMenu, lucideChevronRight })],
   template: `
     <!--
       좌우 여백을 부모가 아니라 자식이 갖습니다. 부모에 두면 콘텐츠 열의 상자가 눈에 보이는
@@ -84,7 +92,7 @@ interface NavigationDomain {
     <div class="mx-auto flex max-w-[90rem] items-start gap-10">
       <nav
         aria-label="문서 목록"
-        class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 pl-4 lg:block [view-transition-name:docs-sidebar]"
+        class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 pl-4 lg:block"
       >
         <ng-container [ngTemplateOutlet]="navigation" />
       </nav>
@@ -185,24 +193,44 @@ interface NavigationDomain {
                     {{ stack.overview.title }}
                   </a>
 
-                  @for (group of stack.groups; track group.group) {
-                    <!-- 묶음 제목은 스택 아래 한 단계 들여 씁니다. 링크가 아니라 구분입니다. -->
-                    <p class="mt-2 mb-1 pl-2 text-xs text-foreground-secondary">
-                      {{ group.title }}
-                    </p>
-                    <ul class="flex flex-col gap-0.5 border-l border-border pl-2">
-                      @for (doc of group.documents; track doc.slug) {
-                        <li>
-                          <a
-                            [routerLink]="routes.doc(doc.slug)"
-                            routerLinkActive="bg-accent text-accent-foreground"
-                            class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {{ doc.title }}
-                          </a>
-                        </li>
-                      }
-                    </ul>
+                  @for (group of stack.groups; track group.key) {
+                    <!--
+                      묶음은 기본이 접힘입니다. 문서 35 개를 한 번에 펼쳐 두면 찾는 것이
+                      아니라 훑는 화면이 됩니다.
+
+                      details 를 쓰는 이유는 접힌 내용이 DOM 에 남기 때문입니다. 조건부
+                      렌더링으로 만들면 접힌 묶음의 링크가 아예 없어져 크롤러가 문서를
+                      찾지 못하고, 스크립트가 없는 환경에서는 펼칠 수단도 사라집니다.
+                    -->
+                    <details
+                      class="group/disclosure mt-2"
+                      [open]="group.open"
+                      (toggle)="toggleGroup(group.key, $any($event.target).open)"
+                    >
+                      <summary
+                        class="flex cursor-pointer list-none items-center gap-1 rounded-md py-1 pl-2 text-xs text-foreground-secondary transition-colors pointer-coarse:py-2 hover:text-foreground"
+                      >
+                        <ng-icon
+                          name="lucideChevronRight"
+                          class="text-sm transition-transform group-open/disclosure:rotate-90"
+                        />
+                        {{ group.title }}
+                      </summary>
+
+                      <ul class="mt-1 flex flex-col gap-0.5 border-l border-border pl-2">
+                        @for (doc of group.documents; track doc.slug) {
+                          <li>
+                            <a
+                              [routerLink]="routes.doc(doc.slug)"
+                              routerLinkActive="bg-accent text-accent-foreground"
+                              class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
+                            >
+                              {{ doc.title }}
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </details>
                   }
                 </li>
               }
@@ -222,6 +250,25 @@ export class DocsLayout {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
+  /**
+   * 펼쳐 둔 묶음입니다. 기본은 전부 접힘이며 문서 35 개를 한 번에 펼쳐 놓지 않습니다.
+   *
+   * 주소에 두지 않는 이유는 라우팅과-네비게이션.md 3.3절이 열린 아코디언을 컴포넌트 상태로
+   * 규정하기 때문입니다. 공유된 링크가 남의 사이드바 접힘까지 정할 이유가 없습니다.
+   *
+   * 프레임은 문서 사이를 오가는 동안 유지되므로 펼쳐 둔 상태가 이동할 때마다 풀리지 않습니다.
+   */
+  private readonly expanded = signal<ReadonlySet<string>>(new Set());
+
+  /** 지금 보고 있는 문서의 슬러그입니다. 그 문서가 든 묶음은 자동으로 펼칩니다. */
+  private readonly activeSlug = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => slugOf(this.router.url)),
+    ),
+    { initialValue: slugOf(this.router.url) },
+  );
+
   /** 영역 개요입니다. 사이드바 맨 위에 단독으로 놓입니다. */
   protected readonly overview = computed(() => DOC_SUMMARIES.find((doc) => doc.kind === 'area'));
 
@@ -229,17 +276,25 @@ export class DocsLayout {
    * 사이드바 트리입니다. 문서가 없는 묶음과 개요가 없는 스택은 빼므로,
    * 준비 중인 스택은 개요 하나만 링크로 나타납니다.
    */
-  protected readonly domains = computed<readonly NavigationDomain[]>(() =>
-    (Object.keys(DOC_DOMAINS) as DocDomain[])
+  protected readonly domains = computed<readonly NavigationDomain[]>(() => {
+    // 템플릿에서 함수를 부르지 않도록 펼침 여부까지 여기서 계산해 둡니다. 성능.md 3.1절
+    const expanded = this.expanded();
+    const active = this.activeSlug();
+
+    return (Object.keys(DOC_DOMAINS) as DocDomain[])
       .map((domain) => ({
         domain,
         title: DOC_DOMAINS[domain],
-        stacks: this.stacksOf(domain),
+        stacks: this.stacksOf(domain, expanded, active),
       }))
-      .filter((entry) => entry.stacks.length > 0),
-  );
+      .filter((entry) => entry.stacks.length > 0);
+  });
 
-  private stacksOf(domain: DocDomain): readonly NavigationStack[] {
+  private stacksOf(
+    domain: DocDomain,
+    expanded: ReadonlySet<string>,
+    active: string,
+  ): readonly NavigationStack[] {
     const inDomain = DOC_SUMMARIES.filter((doc) => doc.domain === domain);
     const names = [...new Set(inDomain.map((doc) => doc.stack).filter((name) => name !== null))];
 
@@ -248,19 +303,44 @@ export class DocsLayout {
         const documents = inDomain.filter((doc) => doc.stack === stack);
         const overview = documents.find((doc) => doc.kind === 'stack');
 
-        return overview ? { stack, overview, groups: this.groupsOf(documents) } : null;
+        return overview
+          ? { stack, overview, groups: this.groupsOf(stack, documents, expanded, active) }
+          : null;
       })
       .filter((entry) => entry !== null);
   }
 
-  private groupsOf(documents: readonly DocSummary[]): readonly NavigationGroup[] {
+  private groupsOf(
+    stack: string,
+    documents: readonly DocSummary[],
+    expanded: ReadonlySet<string>,
+    active: string,
+  ): readonly NavigationGroup[] {
     return (Object.keys(DOC_GROUPS) as DocGroup[])
-      .map((group) => ({
-        group,
-        title: DOC_GROUPS[group],
-        documents: documents.filter((doc) => doc.group === group),
-      }))
+      .map((group) => {
+        const inGroup = documents.filter((doc) => doc.group === group);
+        const key = `${stack}/${group}`;
+
+        return {
+          group,
+          title: DOC_GROUPS[group],
+          documents: inGroup,
+          key,
+          // 보고 있는 문서가 든 묶음은 접혀 있으면 자기 위치를 알 수 없으므로 함께 펼칩니다.
+          open: expanded.has(key) || inGroup.some((doc) => doc.slug === active),
+        };
+      })
       .filter((entry) => entry.documents.length > 0);
+  }
+
+  /** 사용자가 직접 여닫은 결과를 기록합니다. 지금 보고 있는 묶음은 이 값과 무관하게 펼쳐집니다. */
+  protected toggleGroup(key: string, open: boolean): void {
+    this.expanded.update((current) => {
+      const next = new Set(current);
+      if (open) next.add(key);
+      else next.delete(key);
+      return next;
+    });
   }
 
   constructor() {

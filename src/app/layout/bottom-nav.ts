@@ -20,7 +20,7 @@ import { NAVIGATION } from '@/shared/config';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class:
-      'bg-toolbar fixed inset-x-0 bottom-0 z-40 border-t border-border backdrop-blur-lg backdrop-saturate-180 md:hidden [view-transition-name:bottom-nav]',
+      'bg-toolbar fixed inset-x-0 bottom-0 z-40 border-t border-border backdrop-blur-lg backdrop-saturate-180 md:hidden',
   },
   template: `
     <!--
