@@ -116,11 +116,8 @@ import { SiteFooter } from './site-footer';
       베일의 기준 상자이기도 합니다. 헤더·푸터·하단 네비가 이 밖에 있으므로
       전환 중에도 그 셋은 덮이지 않습니다. 사이드바를 함께 그리는 프레임은
       자기 콘텐츠 열에 베일을 두므로 그동안 여기 것은 물러납니다.
-
-      화면 전환에서 움직이는 유일한 자리이기도 합니다. 이름을 여기 하나에만 붙이고
-      나머지는 루트에 남겨 두면, 크롬을 추가해도 전환에서 빼는 처리를 따로 하지 않습니다.
     -->
-    <main class="relative flex-1 [view-transition-name:page]">
+    <main class="relative flex-1">
       @if (!veilSlot.claimedByFrame()) {
         <app-navigation-veil />
       }

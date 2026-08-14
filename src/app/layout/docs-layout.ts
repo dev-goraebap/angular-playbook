@@ -85,14 +85,19 @@ interface NavigationDomain {
   providers: [provideIcons({ lucideMenu, lucideChevronRight })],
   template: `
     <!--
-      좌우 여백을 부모가 아니라 자식이 갖습니다. 부모에 두면 콘텐츠 열의 상자가 눈에 보이는
-      본문 영역보다 좁아지고, 그 상자를 기준으로 놓은 베일이 양옆에 덮이지 않는 띠를 남깁니다.
-      기준 상자와 덮어야 할 영역은 같아야 합니다(로딩-전략.md 7.1절).
+      두 열을 벌리는 값도, 좌우 여백도 부모가 아니라 자식이 갖습니다. 부모에 gap 이나 padding 을
+      두면 콘텐츠 열의 상자가 눈에 보이는 본문 영역보다 좁아지고, 그 상자를 기준으로 놓은 베일이
+      사이드바와의 사이에 덮이지 않는 띠를 남깁니다. 기준 상자와 덮어야 할 영역은 같아야
+      합니다(로딩-전략.md 7.1절).
+
+      items-start 도 같은 이유로 쓰지 않습니다. 사이드바가 본문보다 길 때 콘텐츠 열의 상자가
+      본문 영역보다 짧아져 아래쪽에 덮이지 않는 띠가 생깁니다. 늘어나면 안 되는 것은
+      사이드바 하나뿐이므로 그쪽만 self-start 로 뺍니다.
     -->
-    <div class="mx-auto flex max-w-[90rem] items-start gap-10">
+    <div class="mx-auto flex max-w-[90rem]">
       <nav
         aria-label="문서 목록"
-        class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 pl-4 lg:block"
+        class="scroll-thin sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-64 shrink-0 self-start overflow-y-auto py-8 pl-4 lg:block"
       >
         <ng-container [ngTemplateOutlet]="navigation" />
       </nav>
@@ -104,8 +109,8 @@ interface NavigationDomain {
         덮으면 사이드바까지 가려집니다. 문서 영역에서 이동 수단이 사이드바이므로
         대기 중에도 눌러야 합니다(로딩-전략.md 7.1절).
       -->
-      <!-- 사이드바가 보이는 폭에서는 그쪽이 왼쪽 여백을 대므로 여기서는 오른쪽만 갖습니다. -->
-      <div id="main" class="relative min-w-0 flex-1 py-8 pr-4 max-lg:pl-4">
+      <!-- 사이드바가 보이는 폭에서는 왼쪽 여백이 두 열 사이의 간격을 겸합니다. -->
+      <div id="main" class="relative min-w-0 flex-1 px-4 py-8 lg:pl-10">
         <app-navigation-veil />
         <router-outlet />
       </div>
