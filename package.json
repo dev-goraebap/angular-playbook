@@ -1,5 +1,5 @@
 {
-  "name": "angular-playbook",
+  "name": "blog",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -12,7 +12,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:angular-playbook": "node dist/angular-playbook/server/server.mjs",
+    "serve:ssr:blog": "node dist/blog/server/server.mjs",
     "lint": "eslint .",
     "lint:fsd": "steiger ./src",
     "check": "npm run lint && npm run lint:fsd && npm run build"

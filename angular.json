@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "angular-playbook": {
+    "blog": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -76,10 +76,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "angular-playbook:build:production"
+              "buildTarget": "blog:build:production"
             },
             "development": {
-              "buildTarget": "angular-playbook:build:development"
+              "buildTarget": "blog:build:development"
             }
           },
           "defaultConfiguration": "development"
