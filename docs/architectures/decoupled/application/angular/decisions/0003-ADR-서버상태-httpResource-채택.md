@@ -39,7 +39,7 @@ Angular 22에서 `resource()`와 `httpResource`가 `@publicApi 22.0`으로 안�
 
 변경 요청은 `httpResource`가 아니라 `HttpClient`를 직접 사용합니다. `httpResource`는 읽기 전용이며 요청이 바뀔 때 진행 중인 작업을 중단하므로 변경 요청에 사용하면 중도 취소될 수 있습니다.
 
-세부 규칙은 [서버 상태와 클라이언트 상태](../references/서버-상태와-클라이언트-상태.md)가 원본입니다.
+세부 규칙은 [서버 상태와 클라이언트 상태](../concepts/서버-상태와-클라이언트-상태.md)가 원본입니다.
 
 ## 도입 재검토 조건
 

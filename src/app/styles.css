@@ -8,7 +8,7 @@
 /*
  * 문서 본문의 타이포그래피입니다. `prose` 유틸리티 하나만 생성하며 그 하위 선택자로만 적용되므로
  * 화면 컴포넌트에는 영향이 없습니다. 색은 pages/docs 가 우리 토큰으로 연결합니다.
- * 채택 근거는 docs/architectures/frontend/angular/decisions/0015-ADR-문서-타이포그래피-프리셋.md 가 원본입니다.
+ * 채택 근거는 docs/architectures/decoupled/application/angular/decisions/0015-ADR-문서-타이포그래피-프리셋.md 가 원본입니다.
  */
 @plugin '@fumadocs/tailwind/typography';
 
@@ -29,7 +29,7 @@
 
 /*
  * 폰트는 자체 호스팅합니다. 선택 근거와 로딩 방식은
- * docs/architectures/frontend/angular/decisions/0014-ADR-폰트-선택과-자체-호스팅.md 가 원본입니다.
+ * docs/architectures/decoupled/application/angular/decisions/0014-ADR-폰트-선택과-자체-호스팅.md 가 원본입니다.
  * 두 임포트 모두 unicode-range 로 분할되어 있어 실제로 쓰는 범위만 내려받습니다.
  */
 @import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
@@ -46,7 +46,7 @@
 
 /*
  * 화면마다 스크롤 유무가 달라 콘텐츠 폭이 변하면 전환 시 레이아웃이 좌우로 흔들립니다.
- * 근거는 docs/architectures/frontend/angular/references/레이아웃.md 4.1절에 있습니다.
+ * 근거는 docs/architectures/decoupled/application/angular/concepts/레이아웃.md 4.1절에 있습니다.
  */
 html {
   scrollbar-gutter: stable;
@@ -58,14 +58,14 @@ html {
    *
    * 단위가 rem 인 이유는 사용자의 브라우저 기본 글꼴 설정을 존중하기 위함입니다.
    * html 의 font-size 에서 rem 은 그 초기값을 가리키므로 순환하지 않습니다.
-   * 제약은 docs/architectures/frontend/angular/references/접근성.md 5절에 있습니다.
+   * 제약은 docs/architectures/decoupled/application/angular/concepts/접근성.md 5절에 있습니다.
    */
   font-size: clamp(1rem, 0.25rem + 0.625vw, 1.25rem);
 }
 
 /*
  * 이미지는 다 받아진 뒤에 드러납니다. 표시를 남기는 쪽은 app 계층이며 규격은
- * docs/architectures/frontend/angular/references/성능.md 4.2절이 원본입니다.
+ * docs/architectures/decoupled/application/angular/concepts/성능.md 4.2절이 원본입니다.
  *
  * 감추는 규칙을 `.js` 아래에 두는 이유는 실패 방향을 정하기 위함입니다. 감추기를 기본값으로
  * 두면 스크립트가 없거나 실패한 환경에서 이미지가 영영 보이지 않습니다. 프리렌더된 HTML 에
@@ -108,7 +108,7 @@ html {
  * 기본값 `light dark` 는 시스템 설정을 따릅니다. 사용자가 선택하면 app 계층이 루트에
  * light 또는 dark 클래스를 부여합니다. 선택 이전에도 CSS 만으로 시스템 설정이 반영되므로
  * 스크립트 실행 전에 잘못된 모드가 잠시 보이는 일이 없습니다.
- * 근거는 docs/architectures/frontend/angular/references/디자인-시스템과-토큰.md 7절에 있습니다.
+ * 근거는 docs/architectures/decoupled/application/angular/concepts/디자인-시스템과-토큰.md 7절에 있습니다.
  */
 :root {
   color-scheme: light dark;
@@ -135,14 +135,14 @@ html {
   /*
    * 기준 반경입니다. Spartan 프리셋이 이 값에 배수를 곱해 sm 부터 4xl 까지를 만듭니다.
    * 1rem 을 기준으로 두면 카드(2xl, 28.8px) · 알약(lg, 16px) · 배지(sm, 9.6px)가
-   * 참조한 디자인의 값과 맞습니다. 근거는 docs/architectures/frontend/angular/decisions/0016-ADR-블로그-디자인-도입.md 입니다.
+   * 참조한 디자인의 값과 맞습니다. 근거는 docs/architectures/decoupled/application/angular/decisions/0016-ADR-블로그-디자인-도입.md 입니다.
    */
   --radius: 1rem;
 
   /*
    * 라이트는 순백에서 한 단계 내린 흰색, 다크는 중성 회색입니다.
    * 순백을 피하는 이유는 채도가 있는 색을 얹었을 때 더 선명하게 보이고 장시간 읽을 때 눈이 덜 부시기 때문입니다.
-   * 값의 출처와 대비 검증은 docs/architectures/frontend/angular/decisions/0016-ADR-블로그-디자인-도입.md 가 원본입니다.
+   * 값의 출처와 대비 검증은 docs/architectures/decoupled/application/angular/decisions/0016-ADR-블로그-디자인-도입.md 가 원본입니다.
    */
   --background: light-dark(oklch(0.997 0 89.9), oklch(0.21 0.006 285.9));
   --foreground: light-dark(oklch(0.218 0 89.9), oklch(0.967 0.001 286.4));
@@ -174,7 +174,7 @@ html {
   /*
    * 문서의 강조 블록이 쓰는 두 색입니다. `주의` 와 `중요` 를 색으로도 구분합니다.
    * 블록 배경은 이 색을 옅게 섞어 만들므로 배경과 라벨의 대비가 함께 확보됩니다.
-   * 토큰을 먼저 추가하고 사용하는 절차는 docs/architectures/frontend/angular/references/디자인-시스템과-토큰.md 3.6절이 원본입니다.
+   * 토큰을 먼저 추가하고 사용하는 절차는 docs/architectures/decoupled/application/angular/concepts/디자인-시스템과-토큰.md 3.6절이 원본입니다.
    */
   --warning: light-dark(oklch(0.545 0.14 65), oklch(0.8 0.13 72));
   --info: light-dark(oklch(0.52 0.17 255), oklch(0.75 0.13 240));
@@ -256,7 +256,7 @@ html {
  * `paper-grain` 클래스를 붙인 문서에만 적용하는 **선택 항목**입니다. 기본값이 아닙니다.
  * 읽는 화면에는 어울리지만 표와 폼이 빽빽한 업무 화면에서는 작은 글자의 가독성을 떨어뜨리고,
  * 데이터 그리드나 가상 스크롤이 있는 화면에서는 고정 레이어가 부담이 됩니다.
- * 화면 성격에 따라 프로젝트가 정합니다. 규칙은 docs/architectures/frontend/angular/references/디자인-시스템과-토큰.md 가 원본입니다.
+ * 화면 성격에 따라 프로젝트가 정합니다. 규칙은 docs/architectures/decoupled/application/angular/concepts/디자인-시스템과-토큰.md 가 원본입니다.
  *
  * 층위를 60 으로 두는 이유는 본문과 상단 바(z-40) 위에는 얹되 오버레이(CDK 기본 1000)
  * 아래에 두기 위함입니다. 모달과 시트는 질감 없는 표면을 유지합니다.

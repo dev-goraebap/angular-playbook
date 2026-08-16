@@ -33,7 +33,7 @@ Angular 22에서 `@angular/forms/signals` 진입점이 제공됩니다. 확인 �
 
 `@angular/forms/signals/compat`는 `ControlValueAccessor` 기반 서드파티 컴포넌트와 연결할 때만 사용하고, 사용 시 사유를 코드 주석으로 남깁니다.
 
-세부 규칙은 [폼과 검증](../references/폼과-검증.md)이 원본입니다.
+세부 규칙은 [폼과 검증](../concepts/폼과-검증.md)이 원본입니다.
 
 ## 검토한 대안
 

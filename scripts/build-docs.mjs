@@ -1,6 +1,6 @@
 // docs/ 의 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
 // 생성물은 커밋하지 않으며 빌드와 검사 전에 항상 다시 만듭니다.
-// 규칙의 근거는 docs/architectures/frontend/angular/references/개발-환경.md 가 원본입니다.
+// 규칙의 근거는 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 가 원본입니다.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, copyFileSync } from 'node:fs';
 import { basename, dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,18 +15,14 @@ const DOCS = join(ROOT, 'docs');
 const OUT = join(ROOT, 'src', 'shared', 'markdown', 'generated');
 
 /** 사이트에서 제외하는 파일입니다. 템플릿은 읽을 문서가 아닙니다. */
-const EXCLUDED = new Set(['architectures/frontend/angular/decisions/0000-template.md']);
+const EXCLUDED = new Set([
+  'architectures/decoupled/application/angular/decisions/0000-template.md',
+]);
 
-/** 스택 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다. */
+/** 노드 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다. */
 const GROUPS = {
-  references: { title: '참조', order: 1 },
+  concepts: { title: '횡단 개념', order: 1 },
   decisions: { title: '결정 기록', order: 2 },
-};
-
-/** 스택을 묶는 영역입니다. 사이드바의 최상위 구분입니다. */
-const DOMAINS = {
-  frontend: { title: '프론트엔드', order: 0 },
-  backend: { title: '백엔드', order: 1 },
 };
 
 /**
@@ -34,25 +30,29 @@ const DOMAINS = {
  * 폴더 구조가 이미 그 정보를 담고 있어 두 벌이 되면 한쪽이 낡기 때문입니다.
  *
  * 인식하는 형태는 넷입니다.
- *   architectures/index.md                          → 영역 개요
- *   architectures/<domain>/<stack>/index.md         → 스택 개요
- *   architectures/<domain>/<stack>/<group>/<파일>   → 스택의 문서
- *   posts/<slug>/index.md                           → 글
+ *   architectures/index.md                     → 영역 개요
+ *   architectures/<...경로>/index.md           → 노드 개요
+ *   architectures/<...경로>/<group>/<파일>     → 그 노드에 속한 문서
+ *   posts/<슬러그>/index.md                    → 글
+ *
+ * 깊이를 고정하지 않는 이유는 아키텍처의 층이 구성마다 다르기 때문입니다. 디커플드는
+ * 시스템과 애플리케이션이 갈리고 그 아래 스택이 붙지만, 통합형은 그 구분 자체가 없습니다.
+ * 깊이를 상수로 두면 새 구성을 넣을 때마다 파서를 고치게 됩니다.
  *
  * 글이 폴더 형태인 이유는 이미지를 본문 옆에 두기 위함입니다. 자산이 문서와 함께 움직입니다.
  *
- * URL 은 `/architectures/<stack>/<slug>` 와 `/posts/<slug>` 로 조립합니다.
- * domain 과 group 을 주소에 넣지 않는 이유는 스택 이름이 이미 유일하고,
- * 계층은 사이드바가 보여주기 때문입니다.
+ * URL 은 `/architectures/<노드 폴더명>/<slug>` 와 `/posts/<슬러그>` 로 조립합니다.
+ * 경로 전체를 넣지 않는 이유는 폴더명이 이미 유일하고 계층은 사이드바가 보여주기 때문이며,
+ * 문서를 다른 층으로 옮겨도 주소가 유지됩니다. 중복은 아래 slug 검사가 잡습니다.
  */
 function locate(relPath) {
   const parts = relPath.split('/');
   const isIndex = parts.at(-1) === 'index.md';
 
-  // posts/<slug>/index.md
+  // posts/<슬러그>/index.md
   if (parts[0] === 'posts') {
     if (parts.length === 3 && isIndex) {
-      return { area: 'posts', domain: null, stack: null, group: null, kind: 'post' };
+      return { area: 'posts', trail: [], group: null, kind: 'post' };
     }
     throw new Error(
       `${relPath} 의 위치를 해석할 수 없습니다. 글은 posts/<슬러그>/index.md 여야 합니다.`,
@@ -65,40 +65,41 @@ function locate(relPath) {
     );
   }
 
+  const inner = parts.slice(1);
+
   // architectures/index.md
-  if (parts.length === 2 && isIndex) {
-    return { area: 'architectures', domain: null, stack: null, group: null, kind: 'area' };
+  if (inner.length === 1 && isIndex) {
+    return { area: 'architectures', trail: [], group: null, kind: 'area' };
   }
 
-  const [, domain, stack] = parts;
-
-  if (!(domain in DOMAINS)) {
-    throw new Error(`${relPath} 의 영역 "${domain}" 이 DOMAINS 에 정의되어 있지 않습니다.`);
+  // architectures/<...경로>/index.md
+  if (isIndex) {
+    return { area: 'architectures', trail: inner.slice(0, -1), group: null, kind: 'node' };
   }
 
-  // architectures/<domain>/<stack>/index.md
-  if (parts.length === 4 && isIndex) {
-    return { area: 'architectures', domain, stack, group: null, kind: 'stack' };
-  }
-
-  // architectures/<domain>/<stack>/<group>/<파일>
-  const group = parts[3];
-  if (parts.length === 5 && group in GROUPS) {
-    return { area: 'architectures', domain, stack, group, kind: 'document' };
+  // architectures/<...경로>/<group>/<파일>
+  const group = inner.at(-2);
+  if (group in GROUPS) {
+    return { area: 'architectures', trail: inner.slice(0, -2), group, kind: 'document' };
   }
 
   throw new Error(
-    `${relPath} 의 위치를 해석할 수 없습니다. ` +
-      `스택 문서는 ${Object.keys(GROUPS).join(' 또는 ')} 아래에 두어야 합니다.`,
+    `${relPath} 의 위치를 해석할 수 없습니다. 개요는 index.md 여야 하고 ` +
+      `나머지 문서는 ${Object.keys(GROUPS).join(' 또는 ')} 아래에 두어야 합니다.`,
   );
 }
 
-/** 사이트에서 쓰는 경로입니다. 문서의 식별자를 겸합니다. */
-function toUrlPath({ stack, kind }, relPath, slug) {
+/**
+ * 사이트에서 쓰는 경로입니다. 문서의 식별자를 겸합니다.
+ *
+ * 노드는 자신의 폴더명을, 문서는 소속 노드의 폴더명을 앞에 답니다. 프론트매터의 slug 가
+ * 아니라 폴더명을 쓰는 이유는 문서와 개요가 같은 접두사를 공유해야 하기 때문입니다.
+ */
+function toUrlPath({ trail, kind }, relPath, slug) {
   if (kind === 'post') return `posts/${relPath.split('/')[1]}`;
   if (kind === 'area') return 'architectures';
-  if (kind === 'stack') return `architectures/${stack}`;
-  return `architectures/${stack}/${slug}`;
+  if (kind === 'node') return `architectures/${trail.at(-1)}`;
+  return `architectures/${trail.at(-1)}/${slug}`;
 }
 
 // ── 문서 수집 ───────────────────────────────────────────────────────────────
@@ -337,7 +338,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/architectures/frontend/angular/references/개발-환경.md 5.2절입니다.
+ * 규칙의 원본은 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 5.2절입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -628,7 +629,7 @@ function linkSectionReferences(html, doc) {
  * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
  * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
  * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
- * 규칙의 원본은 docs/architectures/frontend/angular/references/개발-환경.md 5.4절입니다.
+ * 규칙의 원본은 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 5.4절입니다.
  */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;
@@ -721,14 +722,46 @@ function render(doc) {
 
 // ── 출력 ────────────────────────────────────────────────────────────────────
 
-/** 사이드바에 나타나는 순서입니다. 영역 개요가 먼저 오고 스택 안에서는 개요가 앞섭니다. */
-const KIND_ORDER = { area: 0, stack: 1, document: 2 };
+/** 사이드바에 나타나는 순서입니다. 영역 개요가 먼저 오고 노드 안에서는 개요가 앞섭니다. */
+const KIND_ORDER = { area: 0, node: 1, document: 2, post: 3 };
+
+/** 영역 사이의 순서입니다. 글은 목록 화면이 날짜로 다시 정렬하므로 여기서는 뒤에 둡니다. */
+const AREA_ORDER = { architectures: 0, posts: 1 };
+
+/** 노드 개요의 order 입니다. 형제 노드의 순서를 프론트매터가 정하게 합니다. */
+const NODE_ORDER = new Map(
+  documents.filter((doc) => doc.kind === 'node').map((doc) => [doc.trail.join('/'), doc.order]),
+);
+
+/**
+ * 노드 경로를 얕은 쪽부터 비교합니다. 조상이 자손보다 먼저 오고, 형제 사이에서는 개요의
+ * order 가 정하며 그것이 같으면 폴더명 순입니다.
+ *
+ * 폴더명 순만 쓰면 시스템이 애플리케이션 뒤로 밀립니다. 층위가 이름의 알파벳 순과
+ * 일치할 이유가 없으므로 순서를 폴더명이 아니라 문서가 정하게 둡니다.
+ *
+ * 사이드바가 이 순서를 그대로 읽어 트리를 세우므로 부모가 자식보다 뒤에 오면 안 됩니다.
+ */
+function compareTrail(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    if (a[i] === b[i]) continue;
+    if (a[i] === undefined) return -1;
+    if (b[i] === undefined) return 1;
+
+    const orderGap =
+      (NODE_ORDER.get(a.slice(0, i + 1).join('/')) ?? 999) -
+      (NODE_ORDER.get(b.slice(0, i + 1).join('/')) ?? 999);
+    return orderGap !== 0 ? orderGap : a[i].localeCompare(b[i]);
+  }
+  return 0;
+}
 
 const sorted = [...documents].sort((a, b) => {
-  const domainGap = (DOMAINS[a.domain]?.order ?? -1) - (DOMAINS[b.domain]?.order ?? -1);
-  if (domainGap !== 0) return domainGap;
+  const areaGap = AREA_ORDER[a.area] - AREA_ORDER[b.area];
+  if (areaGap !== 0) return areaGap;
 
-  if (a.stack !== b.stack) return (a.stack ?? '').localeCompare(b.stack ?? '');
+  const trailGap = compareTrail(a.trail, b.trail);
+  if (trailGap !== 0) return trailGap;
 
   const kindGap = KIND_ORDER[a.kind] - KIND_ORDER[b.kind];
   if (kindGap !== 0) return kindGap;
@@ -773,8 +806,7 @@ const summaries = sorted.map((doc) => ({
   title: doc.title,
   description: doc.description,
   area: doc.area,
-  domain: doc.domain,
-  stack: doc.stack,
+  trail: doc.trail,
   group: doc.group,
   kind: doc.kind,
   // 글은 목록 카드가 날짜와 표지를 함께 그리므로 요약에 담습니다.
@@ -805,9 +837,12 @@ export interface DocSummary {
   readonly title: string;
   readonly description: string;
   readonly area: DocArea;
-  /** 영역 개요는 domain 과 stack 을 갖지 않고, 스택 개요는 group 을 갖지 않습니다. */
-  readonly domain: DocDomain | null;
-  readonly stack: string | null;
+  /**
+   * 소속 노드의 폴더 경로입니다. 예: ['decoupled', 'application', 'angular']
+   * 영역 개요와 글은 비어 있고, 노드 개요는 자기 자신까지 포함합니다.
+   */
+  readonly trail: readonly string[];
+  /** 노드 개요는 묶음에 속하지 않으므로 null 입니다. */
   readonly group: DocGroup | null;
   readonly kind: DocKind;
   /** 아래 넷은 글에만 있습니다. */
@@ -830,21 +865,11 @@ export interface DocContent {
 
 export type DocArea = 'architectures' | 'posts';
 
-export type DocKind = 'area' | 'stack' | 'document' | 'post';
-
-export type DocDomain = ${Object.keys(DOMAINS)
-    .map((key) => `'${key}'`)
-    .join(' | ')};
+export type DocKind = 'area' | 'node' | 'document' | 'post';
 
 export type DocGroup = ${Object.keys(GROUPS)
     .map((key) => `'${key}'`)
     .join(' | ')};
-
-export const DOC_DOMAINS: Record<DocDomain, string> = ${JSON.stringify(
-    Object.fromEntries(Object.entries(DOMAINS).map(([key, value]) => [key, value.title])),
-    null,
-    2,
-  )};
 
 export const DOC_GROUPS: Record<DocGroup, string> = ${JSON.stringify(
     Object.fromEntries(Object.entries(GROUPS).map(([key, value]) => [key, value.title])),

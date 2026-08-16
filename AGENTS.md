@@ -6,14 +6,20 @@
 
 **규칙과 그 근거의 원본은 `docs/`입니다.** 코드 주석과 본 문서는 그것을 가리키기만 합니다.
 
+Angular 문서는 `docs/architectures/decoupled/application/angular/` 아래에 있습니다. 이하 `.../`로 줄입니다.
+
 | 찾는 것 | 원본 |
 | :--- | :--- |
-| 계층 배치, 임포트 방향 | `docs/architectures/frontend/angular/references/패키지-배치와-참조-규칙.md` |
-| 화면 골격, 스크롤, 상태 화면 | `.../references/레이아웃.md` |
-| 색·서체·간격 토큰 | `.../references/디자인-시스템과-토큰.md` |
-| 반응형과 적응형의 구분 | `.../references/적응형-UI.md` |
-| 문서 작성 규칙, 실측으로 확인한 사항 | `.../references/개발-환경.md` |
+| 계층 배치, 임포트 방향 | `.../concepts/패키지-배치와-참조-규칙.md` |
+| 화면 골격, 스크롤, 상태 화면 | `.../concepts/레이아웃.md` |
+| 색·서체·간격 토큰 | `.../concepts/디자인-시스템과-토큰.md` |
+| 반응형과 적응형의 구분 | `.../concepts/적응형-UI.md` |
+| 문서 작성 규칙, 실측으로 확인한 사항 | `.../concepts/개발-환경.md` |
 | 결정과 기각한 대안 | `.../decisions/` |
+| 앱 분리와 계약, 책임 배분 | `docs/architectures/decoupled/application/index.md` |
+| 배포 단위와 외부 연계 | `docs/architectures/decoupled/system/index.md` |
+
+**층은 위에서 아래로 좁혀집니다.** 위 층의 결정이 아래 층의 전제이며 반대 방향은 없습니다. 스택 문서의 규칙을 바꾸기 전에 그것이 상위 층에서 내려온 전제인지 확인합니다.
 
 새 규칙을 만들었다면 코드에만 두지 않고 해당 문서에 적습니다. 반대로 문서에 이미 있는 내용을 코드 주석이나 본 문서에 옮겨 적는 것을 **금지**합니다. 두 벌이 되면 한쪽이 반드시 낡습니다.
 
@@ -45,13 +51,13 @@ npm run check     # 린트 · FSD 검사 · 빌드
 
 ## 4. 결정을 남기는 곳
 
-설계 선택과 기각한 대안은 `docs/architectures/frontend/angular/decisions/`에 ADR로 남깁니다. 채번 규칙과 대상 선정 기준은 [아키텍처 개요](docs/architectures/frontend/angular/index.md) 9절이 원본입니다.
+설계 선택과 기각한 대안은 `docs/architectures/decoupled/application/angular/decisions/`에 ADR로 남깁니다. 채번 규칙과 대상 선정 기준은 [아키텍처 개요](docs/architectures/decoupled/application/angular/index.md) 9절이 원본입니다.
 
 > **주의: 과거 ADR을 덮어쓰지 않습니다**
 >
 > 결정이 번복되면 신규 ADR을 발행해 이전 것을 `Superseded by`로 참조합니다. 소규모 완화와 예외 추가는 원 ADR의 개정 절에 날짜와 함께 추기합니다. 옛 기록을 고치면 왜 그런 판단을 했는지가 사라집니다.
 
-ADR을 새로 만들면 아키텍처 개요의 등록 현황 표에도 한 줄 추가합니다.
+ADR 목록은 사이드바가 보여주므로 개요 문서에 등록 표를 두지 않습니다. 새 ADR을 만들면 파일 하나만 추가하면 됩니다.
 
 ## 5. 문체
 

@@ -8,10 +8,12 @@
 
 ```text
 docs/                       마크다운 원본. 사이트 콘텐츠의 유일한 출처입니다
-├── architectures/<도메인>/<스택>/
-│   ├── index.md            스택 개요
-│   ├── references/         주제별 참조 문서
-│   └── decisions/          아키텍처 결정 기록(ADR)
+├── architectures/
+│   ├── index.md            영역 개요
+│   └── <구성>/…/<노드>/     구성 · 범위 · 스택 순으로 좁혀지는 층
+│       ├── index.md        그 노드의 개요
+│       ├── concepts/       횡단 개념
+│       └── decisions/      아키텍처 결정 기록(ADR)
 └── posts/<슬러그>/
     ├── index.md            글 본문
     └── assets/             글에 딸린 이미지
@@ -19,6 +21,8 @@ docs/                       마크다운 원본. 사이트 콘텐츠의 유일�
 scripts/build-docs.mjs      마크다운을 화면이 소비할 형태로 변환합니다
 src/                        Angular 애플리케이션
 ```
+
+노드의 깊이는 고정되어 있지 않습니다. 폴더를 한 겹 더 파면 사이드바에 한 층이 늘고, 파서와 화면은 고치지 않습니다.
 
 `src/shared/markdown/generated/`는 빌드 산출물이며 커밋하지 않습니다. 마크다운 원본만 저장소에 남고 차이는 `docs/`에서 읽습니다.
 
@@ -36,10 +40,10 @@ npm run check      # 린트 · FSD 검사 · 빌드를 한 번에 수행합니�
 
 `scripts/build-docs.mjs`가 변환하면서 규칙을 함께 강제합니다. 프론트매터 필수 필드, 강조 블록의 종류와 밀도, 문서 간 링크의 유효성, 절 번호의 유효성, 글의 날짜 형식이 대상입니다. 어긋나면 파일명과 사유를 출력하고 멈추며, 실패해도 기존 생성물은 보존됩니다.
 
-규칙 자체의 원본은 [개발 환경](docs/architectures/frontend/angular/references/개발-환경.md) 5절입니다.
+규칙 자체의 원본은 [개발 환경](docs/architectures/decoupled/application/angular/concepts/개발-환경.md) 5절입니다.
 
 ## 아키텍처 표준
 
 이 저장소는 표준을 문서로만 두지 않고 **자기 자신이 그 표준의 참조 구현**입니다. FSD 계층 구조, 라우팅과 로딩 전략, 디자인 토큰, 적응형 UI 판정이 모두 `src/` 에 적용되어 있으며 Steiger와 ESLint가 위반을 빌드에서 차단합니다.
 
-주요 결정과 기각한 대안은 [decisions/](docs/architectures/frontend/angular/decisions/)에 ADR로 남아 있습니다.
+주요 결정과 기각한 대안은 [decisions/](docs/architectures/decoupled/application/angular/decisions/)에 ADR로 남아 있습니다.

@@ -13,14 +13,7 @@ import {
   HlmSheetPortal,
   HlmSheetTitle,
 } from '@/shared/ui/sheet';
-import {
-  DOC_DOMAINS,
-  DOC_GROUPS,
-  DOC_SUMMARIES,
-  type DocDomain,
-  type DocGroup,
-  type DocSummary,
-} from '@/shared/markdown';
+import { DOC_GROUPS, DOC_SUMMARIES, type DocGroup, type DocSummary } from '@/shared/markdown';
 import { ROUTES } from '@/shared/config';
 import { NavigationVeil, NavigationVeilSlot } from '../navigation-veil';
 
@@ -29,28 +22,38 @@ function slugOf(url: string): string {
   return url.split(/[?#]/)[0].replace(/^\//, '');
 }
 
-/** 스택 안에서 문서를 나누는 묶음입니다. 참조와 결정 기록이 여기 해당합니다. */
+/** 두 경로가 같은지 봅니다. 노드에 직접 속한 문서를 고를 때 씁니다. */
+function isSameTrail(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((segment, index) => segment === b[index]);
+}
+
+/** 앞이 뒤로 시작하는지 봅니다. 자손 노드를 고를 때 씁니다. */
+function startsWithTrail(trail: readonly string[], prefix: readonly string[]): boolean {
+  return prefix.every((segment, index) => trail[index] === segment);
+}
+
+/** 노드 안에서 문서를 나누는 묶음입니다. 횡단 개념과 결정 기록이 여기 해당합니다. */
 interface NavigationGroup {
   readonly group: DocGroup;
   readonly title: string;
   readonly documents: readonly DocSummary[];
-  /** 스택 안에서 묶음을 가리키는 열쇠입니다. 묶음 이름은 스택마다 반복되므로 함께 묶습니다. */
+  /** 묶음을 가리키는 열쇠입니다. 묶음 이름은 노드마다 반복되므로 경로와 함께 묶습니다. */
   readonly key: string;
   readonly open: boolean;
 }
 
-/** 스택 하나입니다. 개요 문서 하나와 그 아래 묶음들로 구성됩니다. */
-interface NavigationStack {
-  readonly stack: string;
+/**
+ * 사이드바의 한 마디입니다. 개요 문서 하나와 그 아래 묶음, 그리고 자식 노드로 구성됩니다.
+ *
+ * 깊이를 고정하지 않는 이유는 아키텍처의 층이 구성마다 다르기 때문입니다. 디커플드는
+ * 구성 · 범위 · 스택 세 층이지만 통합형은 그보다 얕습니다. 자기 참조로 두면 폴더를
+ * 한 겹 더 파도 화면을 고치지 않습니다.
+ */
+interface NavigationNode {
   readonly overview: DocSummary;
   readonly groups: readonly NavigationGroup[];
-}
-
-/** 사이드바 최상위 구분입니다. 프론트엔드와 백엔드가 여기 해당합니다. */
-interface NavigationDomain {
-  readonly domain: DocDomain;
-  readonly title: string;
-  readonly stacks: readonly NavigationStack[];
+  readonly children: readonly NavigationNode[];
+  readonly key: string;
 }
 
 /**
@@ -58,7 +61,7 @@ interface NavigationDomain {
  *
  * 원래 설명은 다음과 같습니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
  *
- * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/frontend/angular/references/레이아웃.md 2절이 원본입니다.
+ * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/decoupled/application/angular/concepts/레이아웃.md 2절이 원본입니다.
  * `topbar` 는 문서 전체가 스크롤 컨테이너이므로 헤더의 `sticky` 가 뷰포트를 기준으로 동작합니다.
  * 골격 전환을 제공하지 않으므로 3.1절의 템플릿 분기 구조는 아직 두지 않습니다.
  *
@@ -180,69 +183,83 @@ interface NavigationDomain {
           </li>
         }
 
-        @for (domain of domains(); track domain.domain) {
+        @for (node of tree(); track node.key) {
           <li>
-            <h2 class="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-              {{ domain.title }}
-            </h2>
-
-            <ul class="flex flex-col gap-3">
-              @for (stack of domain.stacks; track stack.stack) {
-                <li>
-                  <a
-                    [routerLink]="routes.doc(stack.overview.slug)"
-                    [routerLinkActiveOptions]="{ exact: true }"
-                    routerLinkActive="bg-accent text-accent-foreground"
-                    class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {{ stack.overview.title }}
-                  </a>
-
-                  @for (group of stack.groups; track group.key) {
-                    <!--
-                      묶음은 기본이 접힘입니다. 문서 35 개를 한 번에 펼쳐 두면 찾는 것이
-                      아니라 훑는 화면이 됩니다.
-
-                      details 를 쓰는 이유는 접힌 내용이 DOM 에 남기 때문입니다. 조건부
-                      렌더링으로 만들면 접힌 묶음의 링크가 아예 없어져 크롤러가 문서를
-                      찾지 못하고, 스크립트가 없는 환경에서는 펼칠 수단도 사라집니다.
-                    -->
-                    <details
-                      class="group/disclosure mt-2"
-                      [open]="group.open"
-                      (toggle)="toggleGroup(group.key, $any($event.target).open)"
-                    >
-                      <summary
-                        class="flex cursor-pointer list-none items-center gap-1 rounded-md py-1 pl-2 text-xs text-foreground-secondary transition-colors pointer-coarse:py-2 hover:text-foreground"
-                      >
-                        <ng-icon
-                          name="lucideChevronRight"
-                          class="text-sm transition-transform group-open/disclosure:rotate-90"
-                        />
-                        {{ group.title }}
-                      </summary>
-
-                      <ul class="mt-1 flex flex-col gap-0.5 border-l border-border pl-2">
-                        @for (doc of group.documents; track doc.slug) {
-                          <li>
-                            <a
-                              [routerLink]="routes.doc(doc.slug)"
-                              routerLinkActive="bg-accent text-accent-foreground"
-                              class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
-                            >
-                              {{ doc.title }}
-                            </a>
-                          </li>
-                        }
-                      </ul>
-                    </details>
-                  }
-                </li>
-              }
-            </ul>
+            <ng-container
+              [ngTemplateOutlet]="branch"
+              [ngTemplateOutletContext]="{ $implicit: node }"
+            />
           </li>
         }
       </ul>
+    </ng-template>
+
+    <!--
+      마디 하나를 그립니다. 자기 자신을 다시 불러 자식을 그리므로 층이 몇 겹이든 같은
+      코드가 처리합니다. 폴더를 한 겹 더 파도 이 파일을 고치지 않습니다.
+    -->
+    <ng-template #branch let-node>
+      <a
+        [routerLink]="routes.doc(node.overview.slug)"
+        [routerLinkActiveOptions]="{ exact: true }"
+        routerLinkActive="bg-accent text-accent-foreground"
+        class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
+      >
+        {{ node.overview.title }}
+      </a>
+
+      @for (group of node.groups; track group.key) {
+        <!--
+          묶음은 기본이 접힘입니다. 문서 35 개를 한 번에 펼쳐 두면 찾는 것이
+          아니라 훑는 화면이 됩니다.
+
+          details 를 쓰는 이유는 접힌 내용이 DOM 에 남기 때문입니다. 조건부
+          렌더링으로 만들면 접힌 묶음의 링크가 아예 없어져 크롤러가 문서를
+          찾지 못하고, 스크립트가 없는 환경에서는 펼칠 수단도 사라집니다.
+        -->
+        <details
+          class="group/disclosure mt-2"
+          [open]="group.open"
+          (toggle)="toggleGroup(group.key, $any($event.target).open)"
+        >
+          <summary
+            class="flex cursor-pointer list-none items-center gap-1 rounded-md py-1 pl-2 text-xs text-foreground-secondary transition-colors pointer-coarse:py-2 hover:text-foreground"
+          >
+            <ng-icon
+              name="lucideChevronRight"
+              class="text-sm transition-transform group-open/disclosure:rotate-90"
+            />
+            {{ group.title }}
+          </summary>
+
+          <ul class="mt-1 flex flex-col gap-0.5 border-l border-border pl-2">
+            @for (doc of group.documents; track doc.slug) {
+              <li>
+                <a
+                  [routerLink]="routes.doc(doc.slug)"
+                  routerLinkActive="bg-accent text-accent-foreground"
+                  class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
+                >
+                  {{ doc.title }}
+                </a>
+              </li>
+            }
+          </ul>
+        </details>
+      }
+
+      @if (node.children.length > 0) {
+        <ul class="mt-2 flex flex-col gap-3 border-l border-border pl-2">
+          @for (child of node.children; track child.key) {
+            <li>
+              <ng-container
+                [ngTemplateOutlet]="branch"
+                [ngTemplateOutletContext]="{ $implicit: child }"
+              />
+            </li>
+          }
+        </ul>
+      }
     </ng-template>
   `,
 })
@@ -278,53 +295,48 @@ export class DocsLayout {
   protected readonly overview = computed(() => DOC_SUMMARIES.find((doc) => doc.kind === 'area'));
 
   /**
-   * 사이드바 트리입니다. 문서가 없는 묶음과 개요가 없는 스택은 빼므로,
-   * 준비 중인 스택은 개요 하나만 링크로 나타납니다.
+   * 사이드바 트리입니다. 문서가 없는 묶음은 빼므로 준비 중인 노드는 개요 하나만 나타납니다.
+   *
+   * 계층 정보를 개요 문서의 경로에서 읽습니다. 폴더가 이미 그 정보를 담고 있으므로
+   * 화면이 층의 이름이나 개수를 따로 알지 않습니다.
    */
-  protected readonly domains = computed<readonly NavigationDomain[]>(() => {
+  protected readonly tree = computed<readonly NavigationNode[]>(() => {
     // 템플릿에서 함수를 부르지 않도록 펼침 여부까지 여기서 계산해 둡니다. 성능.md 3.1절
-    const expanded = this.expanded();
-    const active = this.activeSlug();
-
-    return (Object.keys(DOC_DOMAINS) as DocDomain[])
-      .map((domain) => ({
-        domain,
-        title: DOC_DOMAINS[domain],
-        stacks: this.stacksOf(domain, expanded, active),
-      }))
-      .filter((entry) => entry.stacks.length > 0);
+    return this.nodesUnder([], this.expanded(), this.activeSlug());
   });
 
-  private stacksOf(
-    domain: DocDomain,
+  /** 주어진 경로 바로 아래 한 층의 노드들입니다. 자기 자신을 불러 그 아래를 마저 세웁니다. */
+  private nodesUnder(
+    trail: readonly string[],
     expanded: ReadonlySet<string>,
     active: string,
-  ): readonly NavigationStack[] {
-    const inDomain = DOC_SUMMARIES.filter((doc) => doc.domain === domain);
-    const names = [...new Set(inDomain.map((doc) => doc.stack).filter((name) => name !== null))];
-
-    return names
-      .map((stack) => {
-        const documents = inDomain.filter((doc) => doc.stack === stack);
-        const overview = documents.find((doc) => doc.kind === 'stack');
-
-        return overview
-          ? { stack, overview, groups: this.groupsOf(stack, documents, expanded, active) }
-          : null;
-      })
-      .filter((entry) => entry !== null);
+  ): readonly NavigationNode[] {
+    return DOC_SUMMARIES.filter(
+      (doc) =>
+        doc.kind === 'node' &&
+        doc.trail.length === trail.length + 1 &&
+        startsWithTrail(doc.trail, trail),
+    ).map((overview) => ({
+      overview,
+      key: overview.trail.join('/'),
+      groups: this.groupsOf(overview.trail, expanded, active),
+      children: this.nodesUnder(overview.trail, expanded, active),
+    }));
   }
 
   private groupsOf(
-    stack: string,
-    documents: readonly DocSummary[],
+    trail: readonly string[],
     expanded: ReadonlySet<string>,
     active: string,
   ): readonly NavigationGroup[] {
+    const own = DOC_SUMMARIES.filter(
+      (doc) => doc.kind === 'document' && isSameTrail(doc.trail, trail),
+    );
+
     return (Object.keys(DOC_GROUPS) as DocGroup[])
       .map((group) => {
-        const inGroup = documents.filter((doc) => doc.group === group);
-        const key = `${stack}/${group}`;
+        const inGroup = own.filter((doc) => doc.group === group);
+        const key = `${trail.join('/')}/${group}`;
 
         return {
           group,
