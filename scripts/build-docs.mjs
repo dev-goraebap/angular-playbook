@@ -14,10 +14,13 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
 const OUT = join(ROOT, 'src', 'shared', 'markdown', 'generated');
 
-/** 사이트에서 제외하는 파일입니다. 템플릿은 읽을 문서가 아닙니다. */
-const EXCLUDED = new Set([
-  'architectures/decoupled/application/angular/decisions/0000-template.md',
-]);
+/**
+ * 사이트에서 제외하는 파일명입니다. 템플릿은 읽을 문서가 아닙니다.
+ *
+ * 경로가 아니라 파일명으로 거르는 이유는 스택마다 템플릿이 하나씩 생기기 때문입니다.
+ * 경로를 열거하면 스택을 추가할 때마다 여기를 고쳐야 하고, 잊으면 템플릿이 사이트에 나타납니다.
+ */
+const EXCLUDED_NAMES = new Set(['0000-template.md']);
 
 /** 노드 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다. */
 const GROUPS = {
@@ -119,10 +122,9 @@ function collectMarkdownPaths(dir = DOCS, acc = []) {
       continue;
     }
     if (!entry.name.endsWith('.md')) continue;
+    if (EXCLUDED_NAMES.has(entry.name)) continue;
 
-    const relPath = relative(DOCS, full).split('\\').join('/');
-    if (EXCLUDED.has(relPath)) continue;
-    acc.push(relPath);
+    acc.push(relative(DOCS, full).split('\\').join('/'));
   }
   return acc;
 }
