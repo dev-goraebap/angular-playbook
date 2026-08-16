@@ -51,7 +51,7 @@ export class NavigationVeilSlot {
  * 화면 전환 중 콘텐츠 영역을 덮는 베일입니다.
  *
  * 경로가 바뀌면 베일, 쿼리만 바뀌면 인디케이터라는 판정과 시간 정책의 근거는
- * docs/architectures/decoupled/application/angular/concepts/로딩-전략.md 3절과 4절에 있습니다. 정책을 라우터 층에 거는 이유는
+ * docs/architectures/decoupled/angular/references/로딩-전략.md 3절과 4절에 있습니다. 정책을 라우터 층에 거는 이유는
  * 화면마다 다른 값을 쓰면 같은 대기가 화면에 따라 다르게 보이기 때문입니다.
  *
  * 덮는 범위는 이 컴포넌트를 놓은 자리가 정합니다. 화면 전체가 아니라 콘텐츠

@@ -4,7 +4,16 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideChevronRight, lucideMenu } from '@ng-icons/lucide';
+import {
+  lucideBoxes,
+  lucideChevronRight,
+  lucideComponent,
+  lucideLayers,
+  lucideLeaf,
+  lucideMenu,
+  lucidePenLine,
+  lucideServer,
+} from '@ng-icons/lucide';
 import { HlmButton } from '@/shared/ui/button';
 import {
   HlmSheet,
@@ -54,6 +63,7 @@ interface NavigationNode {
   readonly groups: readonly NavigationGroup[];
   readonly children: readonly NavigationNode[];
   readonly key: string;
+  readonly open: boolean;
 }
 
 /**
@@ -61,7 +71,7 @@ interface NavigationNode {
  *
  * 원래 설명은 다음과 같습니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
  *
- * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/decoupled/application/angular/concepts/레이아웃.md 2절이 원본입니다.
+ * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/decoupled/angular/references/레이아웃.md 2절이 원본입니다.
  * `topbar` 는 문서 전체가 스크롤 컨테이너이므로 헤더의 `sticky` 가 뷰포트를 기준으로 동작합니다.
  * 골격 전환을 제공하지 않으므로 3.1절의 템플릿 분기 구조는 아직 두지 않습니다.
  *
@@ -85,7 +95,23 @@ interface NavigationNode {
     HlmSheetTitle,
     NavigationVeil,
   ],
-  providers: [provideIcons({ lucideMenu, lucideChevronRight })],
+  /*
+   * 노드 아이콘은 문서의 프론트매터가 이름으로 지정하므로 쓰이는 것을 여기서 전부 등록합니다.
+   * 이름이 문자열이라 컴파일러가 누락을 잡지 못하며, 등록하지 않은 이름은 오류 없이
+   * 빈 자리로 나타납니다. 새 노드를 만들 때 아이콘을 함께 등록했는지 확인합니다.
+   */
+  providers: [
+    provideIcons({
+      lucideMenu,
+      lucideChevronRight,
+      lucidePenLine,
+      lucideLayers,
+      lucideServer,
+      lucideBoxes,
+      lucideComponent,
+      lucideLeaf,
+    }),
+  ],
   template: `
     <!--
       두 열을 벌리는 값도, 좌우 여백도 부모가 아니라 자식이 갖습니다. 부모에 gap 이나 padding 을
@@ -169,16 +195,20 @@ interface NavigationNode {
 
     <!-- 데스크탑 사이드바와 모바일 시트가 같은 목록을 공유합니다. 레이아웃.md 3절 -->
     <ng-template #navigation>
-      <ul class="flex flex-col gap-6">
+      <ul class="flex flex-col gap-1">
         @if (overview(); as area) {
           <li>
             <a
               [routerLink]="routes.doc(area.slug)"
               [routerLinkActiveOptions]="{ exact: true }"
-              routerLinkActive="bg-accent text-accent-foreground"
-              class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
+              routerLinkActive="bg-accent font-medium text-accent-foreground [&_ng-icon]:text-primary"
+              class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-secondary transition-colors pointer-coarse:py-2.5 hover:bg-accent hover:text-accent-foreground"
+              [title]="area.title"
             >
-              {{ area.title }}
+              @if (area.icon) {
+                <ng-icon [name]="area.icon" class="shrink-0 text-base text-muted-foreground" />
+              }
+              <span class="truncate">{{ area.title }}</span>
             </a>
           </li>
         }
@@ -197,69 +227,115 @@ interface NavigationNode {
     <!--
       마디 하나를 그립니다. 자기 자신을 다시 불러 자식을 그리므로 층이 몇 겹이든 같은
       코드가 처리합니다. 폴더를 한 겹 더 파도 이 파일을 고치지 않습니다.
+
+      제목은 truncate 로 한 줄에 가둡니다. 사이드바 폭이 고정인데 제목 길이는 문서마다
+      다르므로, 줄바꿈을 허용하면 항목의 높이가 들쭉날쭉해져 목록의 리듬이 깨집니다.
+      잘린 전체 문구는 title 속성이 들고 있습니다.
     -->
     <ng-template #branch let-node>
-      <a
-        [routerLink]="routes.doc(node.overview.slug)"
-        [routerLinkActiveOptions]="{ exact: true }"
-        routerLinkActive="bg-accent text-accent-foreground"
-        class="block rounded-md px-2 py-1.5 text-sm font-medium transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
+      <!--
+        마디도 접힙니다. 여는 것과 가는 것을 한 줄에 두되, 제목을 누르면 그 개요로 이동하고
+        나머지 자리를 누르면 접힙니다. 링크가 자기 클릭을 여기서 멈추므로 두 동작이 겹치지
+        않습니다.
+      -->
+      <details
+        class="group/node"
+        [open]="node.open"
+        (toggle)="toggleGroup(node.key, $any($event.target).open)"
       >
-        {{ node.overview.title }}
-      </a>
-
-      @for (group of node.groups; track group.key) {
-        <!--
-          묶음은 기본이 접힘입니다. 문서 35 개를 한 번에 펼쳐 두면 찾는 것이
-          아니라 훑는 화면이 됩니다.
-
-          details 를 쓰는 이유는 접힌 내용이 DOM 에 남기 때문입니다. 조건부
-          렌더링으로 만들면 접힌 묶음의 링크가 아예 없어져 크롤러가 문서를
-          찾지 못하고, 스크립트가 없는 환경에서는 펼칠 수단도 사라집니다.
-        -->
-        <details
-          class="group/disclosure mt-2"
-          [open]="group.open"
-          (toggle)="toggleGroup(group.key, $any($event.target).open)"
+        <summary
+          class="flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-secondary transition-colors select-none pointer-coarse:py-2.5 hover:bg-accent hover:text-accent-foreground has-[.is-active]:bg-accent has-[.is-active]:text-accent-foreground"
         >
-          <summary
-            class="flex cursor-pointer list-none items-center gap-1 rounded-md py-1 pl-2 text-xs text-foreground-secondary transition-colors pointer-coarse:py-2 hover:text-foreground"
+          <a
+            [routerLink]="routes.doc(node.overview.slug)"
+            [routerLinkActiveOptions]="{ exact: true }"
+            routerLinkActive="is-active font-medium [&_ng-icon]:text-primary"
+            class="flex min-w-0 flex-1 items-center gap-2"
+            [title]="node.overview.title"
+            (click)="$event.stopPropagation()"
           >
+            @if (node.overview.icon) {
+              <ng-icon [name]="node.overview.icon" class="shrink-0 text-base text-muted-foreground" />
+            }
+            <span class="truncate">{{ node.overview.title }}</span>
+          </a>
+
+          @if (node.groups.length > 0 || node.children.length > 0) {
             <ng-icon
               name="lucideChevronRight"
-              class="text-sm transition-transform group-open/disclosure:rotate-90"
+              class="shrink-0 text-sm text-muted-foreground transition-transform group-open/node:rotate-90"
             />
-            {{ group.title }}
-          </summary>
+          }
+        </summary>
 
-          <ul class="mt-1 flex flex-col gap-0.5 border-l border-border pl-2">
-            @for (doc of group.documents; track doc.slug) {
-              <li>
-                <a
-                  [routerLink]="routes.doc(doc.slug)"
-                  routerLinkActive="bg-accent text-accent-foreground"
-                  class="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors pointer-coarse:py-3 hover:bg-accent hover:text-accent-foreground"
-                >
-                  {{ doc.title }}
-                </a>
-              </li>
-            }
-          </ul>
-        </details>
-      }
+        @if (node.groups.length > 0 || node.children.length > 0) {
+        <!--
+          자식 묶음을 세로선으로 잇습니다. 선이 없으면 들여쓰기만으로 계층을 읽어야 하는데,
+          한 화면에 층이 넷까지 겹치면 어느 항목이 어느 부모에 속하는지 눈으로 따라가기
+          어렵습니다. 왼쪽 여백은 부모의 아이콘 자리와 맞춥니다.
+        -->
+        <div class="mt-1 ml-3 flex flex-col gap-1 border-l border-border pl-3">
+          @for (group of node.groups; track group.key) {
+            <!--
+              묶음은 기본이 접힘입니다. 문서 서른 개를 한 번에 펼쳐 두면 찾는 것이
+              아니라 훑는 화면이 됩니다.
 
-      @if (node.children.length > 0) {
-        <ul class="mt-2 flex flex-col gap-3 border-l border-border pl-2">
+              details 를 쓰는 이유는 접힌 내용이 DOM 에 남기 때문입니다. 조건부
+              렌더링으로 만들면 접힌 묶음의 링크가 아예 없어져 크롤러가 문서를
+              찾지 못하고, 스크립트가 없는 환경에서는 펼칠 수단도 사라집니다.
+            -->
+            <details
+              class="group/disclosure"
+              [open]="group.open"
+              (toggle)="toggleGroup(group.key, $any($event.target).open)"
+            >
+              <!--
+                펼침 표시를 오른쪽 끝에 둡니다. 왼쪽에 두면 제목의 시작 위치가 형제
+                항목과 어긋나 목록의 세로 정렬이 깨집니다.
+              -->
+              <summary
+                class="flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-secondary transition-colors select-none pointer-coarse:py-2.5 hover:bg-accent hover:text-accent-foreground"
+              >
+                <span class="truncate">{{ group.title }}</span>
+                <ng-icon
+                  name="lucideChevronRight"
+                  class="ml-auto shrink-0 text-sm text-muted-foreground transition-transform group-open/disclosure:rotate-90"
+                />
+              </summary>
+
+              <!--
+                잎 항목은 세로선 위에 자기 구간을 덮어 그립니다. 활성 항목의 선만 강조색이
+                되므로 배경을 칠하지 않고도 현재 위치가 드러나며, 본문 우측 목차와 같은
+                표현이라 두 곳을 따로 익히지 않아도 됩니다.
+              -->
+              <ul class="mt-1 flex flex-col border-l border-border">
+                @for (doc of group.documents; track doc.slug) {
+                  <li>
+                    <a
+                      [routerLink]="routes.doc(doc.slug)"
+                      routerLinkActive="border-primary font-medium text-foreground"
+                      class="-ml-px block truncate border-l border-transparent py-1 pr-2 pl-3 text-sm text-muted-foreground transition-colors pointer-coarse:py-2 hover:border-border hover:text-foreground"
+                      [title]="doc.title"
+                    >
+                      {{ doc.title }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            </details>
+          }
+
           @for (child of node.children; track child.key) {
-            <li>
+            <div>
               <ng-container
                 [ngTemplateOutlet]="branch"
                 [ngTemplateOutletContext]="{ $implicit: child }"
               />
-            </li>
+            </div>
           }
-        </ul>
-      }
+          </div>
+        }
+      </details>
     </ng-template>
   `,
 })
@@ -273,14 +349,17 @@ export class DocsLayout {
   private readonly destroyRef = inject(DestroyRef);
 
   /**
-   * 펼쳐 둔 묶음입니다. 기본은 전부 접힘이며 문서 35 개를 한 번에 펼쳐 놓지 않습니다.
+   * 사용자가 직접 여닫은 결과입니다. 손대지 않은 항목은 이 맵에 없으며 기본값을 따릅니다.
+   *
+   * 집합이 아니라 맵인 이유는 기본값이 항목마다 다르기 때문입니다. 묶음은 접힘이 기본이고
+   * 최상위 마디는 펼침이 기본이라, "펼쳐 둔 것"만 기록해서는 최상위를 접을 수 없습니다.
    *
    * 주소에 두지 않는 이유는 라우팅과-네비게이션.md 3.3절이 열린 아코디언을 컴포넌트 상태로
    * 규정하기 때문입니다. 공유된 링크가 남의 사이드바 접힘까지 정할 이유가 없습니다.
    *
-   * 프레임은 문서 사이를 오가는 동안 유지되므로 펼쳐 둔 상태가 이동할 때마다 풀리지 않습니다.
+   * 프레임은 문서 사이를 오가는 동안 유지되므로 여닫은 상태가 이동할 때마다 풀리지 않습니다.
    */
-  private readonly expanded = signal<ReadonlySet<string>>(new Set());
+  private readonly toggled = signal<ReadonlyMap<string, boolean>>(new Map());
 
   /** 지금 보고 있는 문서의 슬러그입니다. 그 문서가 든 묶음은 자동으로 펼칩니다. */
   private readonly activeSlug = toSignal(
@@ -302,31 +381,46 @@ export class DocsLayout {
    */
   protected readonly tree = computed<readonly NavigationNode[]>(() => {
     // 템플릿에서 함수를 부르지 않도록 펼침 여부까지 여기서 계산해 둡니다. 성능.md 3.1절
-    return this.nodesUnder([], this.expanded(), this.activeSlug());
+    return this.nodesUnder([], this.toggled(), this.activeSlug(), 0);
   });
 
   /** 주어진 경로 바로 아래 한 층의 노드들입니다. 자기 자신을 불러 그 아래를 마저 세웁니다. */
   private nodesUnder(
     trail: readonly string[],
-    expanded: ReadonlySet<string>,
+    toggled: ReadonlyMap<string, boolean>,
     active: string,
+    depth: number,
   ): readonly NavigationNode[] {
     return DOC_SUMMARIES.filter(
       (doc) =>
         doc.kind === 'node' &&
         doc.trail.length === trail.length + 1 &&
         startsWithTrail(doc.trail, trail),
-    ).map((overview) => ({
-      overview,
-      key: overview.trail.join('/'),
-      groups: this.groupsOf(overview.trail, expanded, active),
-      children: this.nodesUnder(overview.trail, expanded, active),
-    }));
+    ).map((overview) => {
+      const key = overview.trail.join('/');
+      const groups = this.groupsOf(overview.trail, toggled, active);
+      const children = this.nodesUnder(overview.trail, toggled, active, depth + 1);
+
+      // 보고 있는 문서를 품은 마디는 접혀 있으면 자기 위치를 알 수 없으므로 함께 펼칩니다.
+      const holdsActive =
+        overview.slug === active ||
+        groups.some((group) => group.open) ||
+        children.some((child) => child.open);
+
+      return {
+        overview,
+        key,
+        groups,
+        children,
+        // 최상위 마디만 펼침이 기본입니다. 전부 접으면 문서에 닿는 데 계단이 하나 더 생깁니다.
+        open: holdsActive || (toggled.get(key) ?? depth === 0),
+      };
+    });
   }
 
   private groupsOf(
     trail: readonly string[],
-    expanded: ReadonlySet<string>,
+    toggled: ReadonlyMap<string, boolean>,
     active: string,
   ): readonly NavigationGroup[] {
     const own = DOC_SUMMARIES.filter(
@@ -344,20 +438,15 @@ export class DocsLayout {
           documents: inGroup,
           key,
           // 보고 있는 문서가 든 묶음은 접혀 있으면 자기 위치를 알 수 없으므로 함께 펼칩니다.
-          open: expanded.has(key) || inGroup.some((doc) => doc.slug === active),
+          open: inGroup.some((doc) => doc.slug === active) || (toggled.get(key) ?? false),
         };
       })
       .filter((entry) => entry.documents.length > 0);
   }
 
-  /** 사용자가 직접 여닫은 결과를 기록합니다. 지금 보고 있는 묶음은 이 값과 무관하게 펼쳐집니다. */
+  /** 사용자가 직접 여닫은 결과를 기록합니다. 지금 보고 있는 문서를 품은 자리는 이 값과 무관하게 펼쳐집니다. */
   protected toggleGroup(key: string, open: boolean): void {
-    this.expanded.update((current) => {
-      const next = new Set(current);
-      if (open) next.add(key);
-      else next.delete(key);
-      return next;
-    });
+    this.toggled.update((current) => new Map(current).set(key, open));
   }
 
   constructor() {

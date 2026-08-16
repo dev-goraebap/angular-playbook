@@ -3,7 +3,7 @@ import { docArticleResolver } from '@/pages/docs/docs-article';
 
 /**
  * 라우트 정의는 이 파일이 단독으로 소유합니다. `pages` 슬라이스는 자신의 경로를 정의하지 않습니다.
- * 근거는 docs/architectures/decoupled/application/angular/concepts/라우팅과-네비게이션.md 2절에 있습니다.
+ * 근거는 docs/architectures/decoupled/angular/references/라우팅과-네비게이션.md 2절에 있습니다.
  *
  * 셸이 상단 바를 소유하고 그 아래에서 영역마다 프레임이 갈립니다. 블로그는 사이드바가 없어
  * 화면이 곧 프레임이고, 문서는 사이드바를 가진 프레임을 한 겹 더 둡니다.

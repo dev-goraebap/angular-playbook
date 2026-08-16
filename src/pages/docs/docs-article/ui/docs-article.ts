@@ -170,7 +170,7 @@ export class DocsArticle {
   /**
    * 절 제목의 `id` 를 유지하기 위해 sanitizer 를 우회합니다.
    * 입력은 빌드 시점에 저장소의 마크다운에서 생성된 문자열이며 런타임 데이터가 결합되지 않습니다.
-   * 허용 조건과 적용 범위는 docs/architectures/decoupled/application/angular/decisions/0013-ADR-생성문서-HTML-신뢰.md 가 원본입니다.
+   * 허용 조건과 적용 범위는 docs/architectures/decoupled/angular/decisions/0013-ADR-생성문서-HTML-신뢰.md 가 원본입니다.
    */
   protected readonly body = computed(() =>
     // eslint-disable-next-line no-restricted-properties -- ADR-0013 의 조건을 충족하는 빌드 시점 생성물입니다.

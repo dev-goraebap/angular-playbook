@@ -2,6 +2,7 @@
 slug: architectures
 title: '아키텍처'
 description: '아키텍처를 기록하는 이유와 이 공간의 성격'
+icon: lucidePenLine
 order: 0
 ---
 

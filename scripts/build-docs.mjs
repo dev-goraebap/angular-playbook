@@ -1,6 +1,6 @@
 // docs/ 의 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
 // 생성물은 커밋하지 않으며 빌드와 검사 전에 항상 다시 만듭니다.
-// 규칙의 근거는 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 가 원본입니다.
+// 규칙의 근거는 docs/architectures/decoupled/angular/references/개발-환경.md 가 원본입니다.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, copyFileSync } from 'node:fs';
 import { basename, dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,9 +22,14 @@ const OUT = join(ROOT, 'src', 'shared', 'markdown', 'generated');
  */
 const EXCLUDED_NAMES = new Set(['0000-template.md']);
 
-/** 노드 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다. */
+/**
+ * 노드 안에서 문서를 나누는 묶음입니다. 사이드바의 소제목과 정렬에 사용합니다.
+ *
+ * `concepts` 가 아니라 `references` 인 이유는 이 묶음이 arc42 8절보다 넓기 때문입니다.
+ * 개발 환경과 용어집, 테스트는 횡단 개념이 아니며 앞으로도 그 범주 밖의 문서가 들어옵니다.
+ */
 const GROUPS = {
-  concepts: { title: '횡단 개념', order: 1 },
+  references: { title: '참조', order: 1 },
   decisions: { title: '결정 기록', order: 2 },
 };
 
@@ -186,6 +191,8 @@ for (const relPath of paths) {
     slug: toUrlPath(position, relPath, data.slug),
     title: data.title,
     description: data.description,
+    // 사이드바가 그리는 아이콘 이름입니다. 노드에만 두며 잎 문서는 갖지 않습니다.
+    icon: typeof data.icon === 'string' ? data.icon : null,
     order: typeof data.order === 'number' ? data.order : 999,
     ...position,
     ...(position.kind === 'post' ? readPostFields(relPath, data) : {}),
@@ -340,7 +347,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 5.2절입니다.
+ * 규칙의 원본은 docs/architectures/decoupled/angular/references/개발-환경.md 5.2절입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -631,7 +638,7 @@ function linkSectionReferences(html, doc) {
  * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
  * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
  * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
- * 규칙의 원본은 docs/architectures/decoupled/application/angular/concepts/개발-환경.md 5.4절입니다.
+ * 규칙의 원본은 docs/architectures/decoupled/angular/references/개발-환경.md 5.4절입니다.
  */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;
@@ -807,6 +814,7 @@ const summaries = sorted.map((doc) => ({
   slug: doc.slug,
   title: doc.title,
   description: doc.description,
+  icon: doc.icon,
   area: doc.area,
   trail: doc.trail,
   group: doc.group,
@@ -838,6 +846,8 @@ export interface DocSummary {
   readonly slug: string;
   readonly title: string;
   readonly description: string;
+  /** 사이드바 아이콘 이름입니다. 노드만 갖고 잎 문서는 null 입니다. */
+  readonly icon: string | null;
   readonly area: DocArea;
   /**
    * 소속 노드의 폴더 경로입니다. 예: ['decoupled', 'application', 'angular']

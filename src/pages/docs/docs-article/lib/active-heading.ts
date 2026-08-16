@@ -29,7 +29,7 @@ const BOTTOM_TOLERANCE_PX = 2;
  * 위치 비교만으로 마지막 절에 도달할 수 없기 때문입니다.
  *
  * DOM 과 `window` 접근이므로 관찰 시작을 `afterNextRender` 안으로 제한합니다.
- * 근거는 docs/architectures/decoupled/application/angular/concepts/렌더링-전략.md 2절에 있습니다.
+ * 근거는 docs/architectures/decoupled/angular/references/렌더링-전략.md 2절에 있습니다.
  */
 export function injectActiveHeading(headings: Signal<readonly DocHeading[]>): Signal<string | null> {
   const document = inject(DOCUMENT);

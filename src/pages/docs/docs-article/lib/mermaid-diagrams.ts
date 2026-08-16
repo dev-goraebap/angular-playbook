@@ -13,7 +13,7 @@ type MermaidApi = typeof import('mermaid').default;
 /**
  * 하이라이터와 달리 다이어그램은 화면에서 그립니다.
  * 빌드 시점에 SVG 로 굽는 방식은 puppeteer 를 상시 의존성으로 요구하고 생성물 커밋을 낳습니다.
- * 기각한 대안과 감수하는 대가는 docs/architectures/decoupled/application/angular/decisions/0015-ADR-문서-타이포그래피-프리셋.md 가 원본입니다.
+ * 기각한 대안과 감수하는 대가는 docs/architectures/decoupled/angular/decisions/0015-ADR-문서-타이포그래피-프리셋.md 가 원본입니다.
  */
 let mermaidPromise: Promise<MermaidApi> | null = null;
 
@@ -39,7 +39,7 @@ let renderSequence = 0;
  * 늘어나는 과정을 전환으로 보여주는 선택이며 근거는 CSS 파일 주석에 있습니다.
  *
  * DOM 과 동적 임포트이므로 시작을 `afterNextRender` 안으로 제한합니다.
- * 근거는 docs/architectures/decoupled/application/angular/concepts/렌더링-전략.md 2절에 있습니다.
+ * 근거는 docs/architectures/decoupled/angular/references/렌더링-전략.md 2절에 있습니다.
  */
 export function injectMermaidDiagrams(
   host: Signal<ElementRef<HTMLElement> | undefined>,

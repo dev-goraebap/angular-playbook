@@ -17,7 +17,7 @@ import { SiteFooter } from './site-footer';
  *
  * 사이드바 유무는 자식 프레임이 정합니다. 여기서 경로를 보고 분기하면
  * 셸이 어느 화면인지 알게 되어, 호출부가 골격을 모른다는 원칙이 뒤집힙니다.
- * 근거는 docs/architectures/decoupled/application/angular/concepts/레이아웃.md 3.1절입니다.
+ * 근거는 docs/architectures/decoupled/angular/references/레이아웃.md 3.1절입니다.
  *
  * 상단 바를 셸에 두면 라우트를 옮겨도 재생성되지 않아 전환 중에 깜빡이지 않습니다.
  *
