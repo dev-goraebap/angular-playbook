@@ -4,7 +4,7 @@
  * 본문 서식의 본체는 @fumadocs/tailwind 의 typography 프리셋이며 이 파일은 세 가지만 맡습니다.
  * 프리셋 색을 우리 토큰에 연결하는 일, 프리셋이 다루지 않는 코드 블록을 그리는 일,
  * 그리고 생성 파이프라인이 만든 구조에 대응하는 일입니다.
- * 채택 근거는 external/refarch-angular-springboot/docs/architecture/angular/decisions/0015-ADR-문서-타이포그래피-프리셋.md 가 원본입니다.
+ * 채택 근거는 external/refarch-angular-springboot/docs/architecture/angular/decisions/0046-doc-typography.md 가 원본입니다.
  *
  * [innerHTML] 로 삽입된 요소에는 컴포넌트 스타일 캡슐화가 적용되지 않으므로
  * 이 컴포넌트는 encapsulation 을 끄고 .doc-body 로 범위를 제한합니다.
@@ -88,7 +88,7 @@
 
 /*
  * 강조 블록입니다. 종류는 `주의` 와 `중요` 둘뿐이며 빌드가 나머지를 거부합니다.
- * 색만으로 구분하지 않도록 아이콘과 라벨을 함께 둡니다. 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/접근성.md 6절입니다.
+ * 색만으로 구분하지 않도록 아이콘과 라벨을 함께 둡니다. 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/accessibility.md 6절입니다.
  */
 /*
  * 배경과 경계를 강조색에서 만듭니다. 중립 회색을 깔면 두 종류가 라벨 색으로만 갈리는데,
@@ -104,7 +104,7 @@
 
 /*
  * 종류마다 색을 달리합니다. 표준 문서는 주의와 중요 둘만 쓰고,
- * 글은 다섯 종류를 모두 씁니다. 규칙은 개발-환경.md 5.3절이 원본입니다.
+ * 글은 다섯 종류를 모두 씁니다. 규칙은 dev-environment.md 5.3절이 원본입니다.
  */
 .doc-body .markdown-alert-warning {
   --alert-accent: var(--warning);
@@ -203,7 +203,7 @@
   font-size: 0.8125rem;
 }
 
-/* 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/접근성.md 9절입니다. */
+/* 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/accessibility.md 9절입니다. */
 @media (prefers-reduced-motion: reduce) {
   .doc-body .mermaid-diagram {
     transition: none;

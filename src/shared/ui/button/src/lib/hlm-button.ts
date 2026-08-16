@@ -8,11 +8,11 @@ import { injectBrnButtonConfig } from './hlm-button.token';
 /*
  * 터치 환경의 최소 크기입니다. 크기 변형과 무관하게 바닥을 깔아 둡니다.
  *
- * 판정을 폭이 아니라 포인터로 하는 이유는 적응형-UI.md 2절에 있습니다. 좁게 줄인 데스크탑
+ * 판정을 폭이 아니라 포인터로 하는 이유는 adaptive-ui.md 2절에 있습니다. 좁게 줄인 데스크탑
  * 창은 마우스이고 태블릿 가로는 손가락인데, 폭으로 보면 둘 다 반대로 판정됩니다.
  * CSS 변형이므로 런타임 분기가 아니며 정적 생성 경로에서도 그대로 동작합니다.
  *
- * 값의 근거는 디자인-시스템과-토큰.md 3.7절입니다.
+ * 값의 근거는 design-system.md 3.7절입니다.
  */
 const TOUCH_TARGET = 'pointer-coarse:min-h-11 pointer-coarse:min-w-11';
 

@@ -17,7 +17,7 @@ import { SiteFooter } from './site-footer';
  *
  * 사이드바 유무는 자식 프레임이 정합니다. 여기서 경로를 보고 분기하면
  * 셸이 어느 화면인지 알게 되어, 호출부가 골격을 모른다는 원칙이 뒤집힙니다.
- * 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/레이아웃.md 3.1절입니다.
+ * 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/layout.md 3.1절입니다.
  *
  * 상단 바를 셸에 두면 라우트를 옮겨도 재생성되지 않아 전환 중에 깜빡이지 않습니다.
  *
@@ -26,7 +26,7 @@ import { SiteFooter } from './site-footer';
  *
  * 검색 상태를 주소에 둡니다. 열려 있는 검색은 화면을 덮으므로 사용자가 그것을 화면으로 읽고
  * 뒤로가기를 누르며, 상태가 컴포넌트에 있으면 그 누름이 사이트를 떠나는 이동이 됩니다.
- * 주소에 두면 뒤로가기·새로고침·링크 공유가 별도 구현 없이 동작합니다(라우팅과-네비게이션.md 3.3절).
+ * 주소에 두면 뒤로가기·새로고침·링크 공유가 별도 구현 없이 동작합니다(routing.md 3.3절).
  *
  * 라우터를 호출하는 곳은 이 셸 하나입니다. 오버레이가 자기 주소를 직접 고치면 열림 상태의
  * 원본이 두 곳이 되고, 어느 쪽이 히스토리를 쌓는지 추적할 수 없게 됩니다.
@@ -130,7 +130,7 @@ import { SiteFooter } from './site-footer';
 
     <!--
       검색은 색인과 팔레트를 함께 들여오므로 열 때 받습니다. 조건이 기기가 아니라 조작 상태라
-      하이드레이션 불일치가 없습니다. 지연 판단 기준은 적응형-UI.md 4.4절입니다.
+      하이드레이션 불일치가 없습니다. 지연 판단 기준은 adaptive-ui.md 4.4절입니다.
     -->
     @defer (when searchOpen(); prefetch on idle) {
       <app-site-search

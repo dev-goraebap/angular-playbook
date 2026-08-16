@@ -77,7 +77,7 @@ interface ResultGroup {
   template: `
     <!--
       좁은 화면에서는 화면 전체를 씁니다. DOM 이 같고 크기와 모서리만 달라지므로 반응형이며,
-      런타임 판정을 쓰지 않습니다. 근거는 적응형-UI.md 1절입니다.
+      런타임 판정을 쓰지 않습니다. 근거는 adaptive-ui.md 1절입니다.
     -->
     <hlm-command-dialog
       title="검색"

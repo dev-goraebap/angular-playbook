@@ -31,7 +31,7 @@ module.exports = tseslint.config(
     ],
     processor: angular.processInlineTemplates,
     rules: {
-      // 명명 규칙 — docs/references/명명-규칙.md
+      // 명명 규칙 — docs/references/naming.md
       '@angular-eslint/component-selector': [
         'error',
         { type: 'element', prefix: 'app', style: 'kebab-case' },
@@ -43,7 +43,7 @@ module.exports = tseslint.config(
       '@angular-eslint/component-class-suffix': 'off',
       '@angular-eslint/directive-class-suffix': 'off',
 
-      // 보안 — docs/references/보안.md §3
+      // 보안 — docs/references/security.md §3
       'no-restricted-properties': [
         'error',
         ...['bypassSecurityTrustHtml', 'bypassSecurityTrustScript', 'bypassSecurityTrustStyle',
@@ -53,21 +53,21 @@ module.exports = tseslint.config(
         })),
       ],
 
-      // 예외 · 로깅 — docs/references/예외-에러표시-로깅.md §5.2
+      // 예외 · 로깅 — docs/references/error-handling.md §5.2
       'no-console': ['error', { allow: ['error'] }],
 
       'no-restricted-imports': [
         'error',
         {
           paths: [
-            // 폼 — docs/references/폼과-검증.md §1
+            // 폼 — docs/references/forms.md §1
             {
               name: '@angular/forms',
               importNames: ['FormGroup', 'FormControl', 'FormArray', 'FormBuilder',
                             'ReactiveFormsModule', 'Validators'],
               message: 'Signal Forms(@angular/forms/signals)를 사용합니다. ADR-0008 참조.',
             },
-            // 의존성 주입 — docs/references/패키지-배치와-참조-규칙.md §7.5
+            // 의존성 주입 — docs/references/package-structure.md §7.5
             // Injector 직접 사용은 동적 토큰 주입 경로를 열어 계층 검사를 우회할 수 있습니다.
             // 불가피한 경우 지역 예외 주석으로 사유를 남기십시오.
             {
@@ -83,7 +83,7 @@ module.exports = tseslint.config(
             },
             // Steiger 의 no-public-api-sidestep 을 대신합니다.
             // 그 규칙은 임포트하는 파일에서 발화해 경로 단위로 좁힐 수 없어 해제했습니다.
-            // 근거는 steiger.config.ts 의 주석과 개발-환경.md §7 에 있습니다.
+            // 근거는 steiger.config.ts 의 주석과 dev-environment.md §7 에 있습니다.
             {
               group: ['@/pages/**/ui/**', '@/pages/**/api/**', '@/pages/**/model/**',
                       '@/pages/**/lib/**', '@/pages/**/config/**',

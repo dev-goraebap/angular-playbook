@@ -50,7 +50,7 @@ npm run check      # 린트 · FSD 검사 · 빌드를 한 번에 수행합니�
 
 `scripts/build-docs.mjs`가 변환하면서 규칙을 함께 강제합니다. 프론트매터 필수 필드, 강조 블록의 종류와 밀도, 문서 간 링크의 유효성, 절 번호의 유효성, 글의 날짜 형식이 대상입니다. 어긋나면 파일명과 사유를 출력하고 멈추며, 실패해도 기존 생성물은 보존됩니다.
 
-규칙 자체의 원본은 `external/refarch-angular-springboot/docs/architecture/angular/references/개발-환경.md` 5절이며 사이트에서는 [개발 환경](https://goraebap.xyz/architectures/angular/dev-environment)으로 읽을 수 있습니다.
+규칙 자체의 원본은 `external/refarch-angular-springboot/docs/architecture/angular/references/dev-environment.md` 5절이며 사이트에서는 [개발 환경](https://goraebap.xyz/architectures/angular/dev-environment)으로 읽을 수 있습니다.
 
 ## 아키텍처 표준
 

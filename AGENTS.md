@@ -20,11 +20,11 @@ Angular 문서는 `external/refarch-angular-springboot/docs/architecture/angular
 
 | 찾는 것 | 원본 |
 | :--- | :--- |
-| 계층 배치, 임포트 방향 | `.../references/패키지-배치와-참조-규칙.md` |
-| 화면 골격, 스크롤, 상태 화면 | `.../references/레이아웃.md` |
-| 색·서체·간격 토큰 | `.../references/디자인-시스템과-토큰.md` |
-| 반응형과 적응형의 구분 | `.../references/적응형-UI.md` |
-| 문서 작성 규칙, 실측으로 확인한 사항 | `.../references/개발-환경.md` |
+| 계층 배치, 임포트 방향 | `.../references/package-structure.md` |
+| 화면 골격, 스크롤, 상태 화면 | `.../references/layout.md` |
+| 색·서체·간격 토큰 | `.../references/design-system.md` |
+| 반응형과 적응형의 구분 | `.../references/adaptive-ui.md` |
+| 문서 작성 규칙, 실측으로 확인한 사항 | `.../references/dev-environment.md` |
 | 결정과 기각한 대안 | `.../decisions/` |
 | 앱 분리와 계약, 배포 단위 | `external/refarch-angular-springboot/docs/architecture/index.md` |
 

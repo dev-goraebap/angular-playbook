@@ -14,9 +14,9 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(
       routes,
-      // 리졸버 결과와 경로 파라미터를 컴포넌트 입력으로 받습니다. 로딩-전략.md 5.2절
+      // 리졸버 결과와 경로 파라미터를 컴포넌트 입력으로 받습니다. loading.md 5.2절
       withComponentInputBinding(),
-      // 문서 스크롤을 대상으로 하며 topbar 골격에서 동작합니다. 레이아웃.md 4.3절
+      // 문서 스크롤을 대상으로 하며 topbar 골격에서 동작합니다. layout.md 4.3절
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
     ),
     provideClientHydration(withEventReplay()),

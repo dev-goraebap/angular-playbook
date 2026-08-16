@@ -30,7 +30,7 @@ function pathOf(url: string): string {
  * 바깥 것이 사이드바까지 덮으므로 안쪽이 자리를 가져가는 동안 바깥은 물러납니다.
  *
  * 셸이 경로를 보고 판정하지 않는 이유는 그러면 셸이 어느 화면인지 알게 되어
- * 호출부가 골격을 모른다는 원칙이 뒤집히기 때문입니다(레이아웃.md 3.1절).
+ * 호출부가 골격을 모른다는 원칙이 뒤집히기 때문입니다(layout.md 3.1절).
  * 셸은 "안쪽이 가져갔는가"만 묻고 어느 화면인지는 끝까지 모릅니다.
  */
 @Injectable({ providedIn: 'root' })
@@ -51,11 +51,11 @@ export class NavigationVeilSlot {
  * 화면 전환 중 콘텐츠 영역을 덮는 베일입니다.
  *
  * 경로가 바뀌면 베일, 쿼리만 바뀌면 인디케이터라는 판정과 시간 정책의 근거는
- * external/refarch-angular-springboot/docs/architecture/angular/references/로딩-전략.md 3절과 4절에 있습니다. 정책을 라우터 층에 거는 이유는
+ * external/refarch-angular-springboot/docs/architecture/angular/references/loading.md 3절과 4절에 있습니다. 정책을 라우터 층에 거는 이유는
  * 화면마다 다른 값을 쓰면 같은 대기가 화면에 따라 다르게 보이기 때문입니다.
  *
  * 덮는 범위는 이 컴포넌트를 놓은 자리가 정합니다. 화면 전체가 아니라 콘텐츠
- * 영역만 덮어야 대기 중에도 이동할 수 있습니다(로딩-전략.md 7.1절). 그래서
+ * 영역만 덮어야 대기 중에도 이동할 수 있습니다(loading.md 7.1절). 그래서
  * fixed 가 아니라 absolute 이며, 놓는 쪽이 relative 를 함께 지정합니다.
  *
  * 인디케이터는 반대로 화면 기준입니다. 갱신은 콘텐츠 영역 안의 일이 아니라

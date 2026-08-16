@@ -3,7 +3,7 @@ import fsd from '@feature-sliced/steiger-plugin';
 
 /**
  * FSD 아키텍처 규칙의 강제 수단입니다.
- * 규칙의 근거와 배치 판정 기준은 docs/references/패키지-배치와-참조-규칙.md 가 원본입니다.
+ * 규칙의 근거와 배치 판정 기준은 docs/references/package-structure.md 가 원본입니다.
  */
 export default defineConfig([
   ...fsd.configs.recommended,
@@ -26,7 +26,7 @@ export default defineConfig([
   // <컴포넌트>/src/lib/ 형태라 FSD 의 공개 API 위치와 예약 폴더명 규칙에 걸립니다.
   // 구조를 손으로 평탄화하면 컴포넌트를 추가하거나 재생성할 때마다 같은 작업을 반복하게 되므로,
   // 두 규칙만 이 경로에서 해제합니다. 진입점은 tsconfig 의 @/shared/ui/<컴포넌트> 별칭이 담당합니다.
-  // 근거는 docs/references/디자인-시스템과-토큰.md §1 에 있습니다.
+  // 근거는 docs/references/design-system.md §1 에 있습니다.
   {
     files: ['./src/shared/ui/**'],
     rules: {
