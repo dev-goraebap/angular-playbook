@@ -15,6 +15,9 @@ module.exports = tseslint.config(
       '.angular/**',
       'src/shared/api/generated/**',
       'src/shared/markdown/generated/**',
+      // 서브모듈은 다른 저장소의 소유입니다. 참조 구현 저장소는 자체 린트 규칙을 갖고 있으며
+      // 여기서 검사하면 우리 규약을 그 저장소의 코드에 적용하게 됩니다.
+      'external/**',
     ],
   },
 

@@ -1,7 +1,15 @@
-// docs/ 의 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
+// 마크다운을 문서 사이트가 소비할 생성물로 변환합니다.
 // 생성물은 커밋하지 않으며 빌드와 검사 전에 항상 다시 만듭니다.
-// 규칙의 근거는 docs/architectures/decoupled/angular/references/개발-환경.md 가 원본입니다.
-import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, copyFileSync } from 'node:fs';
+// 규칙의 근거는 external/refarch-angular-springboot/docs/architecture/angular/references/개발-환경.md 가 원본입니다.
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+  readdirSync,
+  copyFileSync,
+  existsSync,
+} from 'node:fs';
 import { basename, dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
@@ -11,8 +19,32 @@ import { createHighlighter } from 'shiki';
 import sharp from 'sharp';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DOCS = join(ROOT, 'docs');
 const OUT = join(ROOT, 'src', 'shared', 'markdown', 'generated');
+
+/**
+ * 마크다운을 읽어 오는 뿌리입니다. 각 뿌리는 자신이 사이트의 어느 자리에 놓이는지를
+ * mount 로 밝히며, 이후의 위치 해석과 링크 해소는 전부 마운트된 경로로 이루어집니다.
+ * 문서가 어느 저장소에서 왔는지는 이 표 밖으로 새지 않습니다.
+ *
+ * 아키텍처 문서의 원본은 refarch-angular-springboot 이며 서브모듈로 들어옵니다. 그 저장소가 문서를
+ * 따르는 코드를 함께 갖고 있어 규칙과 구현이 같은 커밋에서 움직입니다. 블로그에 원본을
+ * 두면 문서만 앞서 나가도 아무것도 막지 않습니다.
+ *
+ * 서브모듈을 docs/ 밖에 두는 이유는 git 이 저장소의 일부만 가져올 수 없기 때문입니다.
+ * 저장소 전체가 들어오므로 docs/ 안에 두면 아래 수집기가 그 저장소의 계획서와 회고까지
+ * 긁고, locate() 가 해석할 수 없는 경로를 만나 빌드가 멈춥니다.
+ *
+ * 부르는 이름이 양쪽에서 다른 것은 층위가 다르기 때문입니다. 그 저장소에게 그것은 자기
+ * 아키텍처이고 사이트에게는 여러 구성 중 하나입니다. URL 은 마운트 경로가 정하므로
+ * 원본이 옮겨 가도 주소는 바뀌지 않습니다.
+ */
+const SOURCES = [
+  { root: join(ROOT, 'docs'), mount: '' },
+  {
+    root: join(ROOT, 'external', 'refarch-angular-springboot', 'docs', 'architecture'),
+    mount: 'architectures/decoupled',
+  },
+];
 
 /**
  * 사이트에서 제외하는 파일명입니다. 템플릿은 읽을 문서가 아닙니다.
@@ -118,23 +150,42 @@ function toUrlPath({ trail, kind }, relPath, slug) {
  */
 const ASSET_DIR = 'assets';
 
-/** docs/ 아래의 마크다운 경로를 docs 기준 상대 경로로 모읍니다. */
-function collectMarkdownPaths(dir = DOCS, acc = []) {
+/**
+ * 뿌리 하나 아래의 마크다운을 모읍니다.
+ * 사이트에서 쓰는 마운트 경로와 실제 파일 위치를 함께 들고 다닙니다.
+ * 뿌리가 여럿이므로 마운트 경로만으로는 파일을 다시 찾을 수 없습니다.
+ */
+function collectMarkdown(source, dir = source.root, acc = []) {
+  // 서브모듈을 받지 않으면 뿌리가 없습니다. readdirSync 의 ENOENT 는 어느 뿌리가
+  // 비었는지도, 무엇을 해야 하는지도 말해 주지 않으므로 여기서 먼저 거릅니다.
+  if (dir === source.root && !existsSync(dir)) {
+    throw new Error(
+      `${relative(ROOT, dir).split('\\').join('/')} 가 없습니다. ` +
+        `서브모듈을 받지 않았을 수 있습니다. git submodule update --init 을 실행하십시오.`,
+    );
+  }
+
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name !== ASSET_DIR) collectMarkdownPaths(full, acc);
+      if (entry.name !== ASSET_DIR) collectMarkdown(source, full, acc);
       continue;
     }
     if (!entry.name.endsWith('.md')) continue;
     if (EXCLUDED_NAMES.has(entry.name)) continue;
 
-    acc.push(relative(DOCS, full).split('\\').join('/'));
+    const inner = relative(source.root, full).split('\\').join('/');
+    acc.push({ path: posix.join(source.mount, inner), file: full });
   }
   return acc;
 }
 
-const paths = collectMarkdownPaths().sort();
+// 기본 문자열 순서로 맞춥니다. localeCompare 는 한글과 ASCII 의 서열을 다르게 매겨
+// 같은 입력에서 생성물의 순서가 바뀝니다.
+const files = SOURCES.flatMap((source) => collectMarkdown(source)).sort((a, b) =>
+  a.path < b.path ? -1 : a.path > b.path ? 1 : 0,
+);
+
 const documents = [];
 
 /**
@@ -168,8 +219,8 @@ function readPostFields(relPath, data) {
   };
 }
 
-for (const relPath of paths) {
-  const raw = readFileSync(join(DOCS, relPath), 'utf-8');
+for (const { path: relPath, file } of files) {
+  const raw = readFileSync(file, 'utf-8');
   const { data, content } = matter(raw);
   const position = locate(relPath);
 
@@ -188,6 +239,8 @@ for (const relPath of paths) {
 
   documents.push({
     path: relPath,
+    // 이미지 원본을 찾을 때 씁니다. 마운트 경로는 파일 위치가 아닙니다.
+    file,
     slug: toUrlPath(position, relPath, data.slug),
     title: data.title,
     description: data.description,
@@ -231,9 +284,9 @@ const ASSETS = join(ROOT, 'public', 'posts');
  * 생성물은 public/posts/ 에 놓이며 커밋하지 않습니다. 원본이 docs/posts/ 에 있어
  * 마크다운 차이를 보면 충분하다는 판단은 문서 HTML 과 같습니다.
  */
-async function buildImage(docRelPath, source) {
-  const postSlug = docRelPath.split('/')[1];
-  const sourcePath = resolve(join(DOCS, dirname(docRelPath)), source);
+async function buildImage(doc, source) {
+  const postSlug = doc.path.split('/')[1];
+  const sourcePath = resolve(dirname(doc.file), source);
   const extension = extname(sourcePath).toLowerCase();
   const name = basename(sourcePath, extension);
   const outDir = join(ASSETS, postSlug);
@@ -299,7 +352,7 @@ async function buildImages(docs) {
     if (doc.kind !== 'post') continue;
 
     for (const source of collectImageSources(doc)) {
-      built.set(`${doc.path}::${source}`, await buildImage(doc.path, source));
+      built.set(`${doc.path}::${source}`, await buildImage(doc, source));
     }
   }
 
@@ -347,7 +400,7 @@ const ALERT_ICONS = {
  * 허용하는 강조 블록은 둘뿐입니다.
  * 위반 시 데이터 손상이나 장애로 이어지는 제약은 `주의`, 작업 전 확인해야 하는 선행 조건은 `중요` 입니다.
  * 종류를 늘리면 강조의 희소성이 사라져 정작 치명적인 경고가 묻힙니다.
- * 규칙의 원본은 docs/architectures/decoupled/angular/references/개발-환경.md 5.2절입니다.
+ * 규칙의 원본은 external/refarch-angular-springboot/docs/architecture/angular/references/개발-환경.md 5.2절입니다.
  */
 const ALERT_VARIANTS = [
   { type: 'warning', title: '주의', icon: ALERT_ICONS.warning },
@@ -638,7 +691,7 @@ function linkSectionReferences(html, doc) {
  * 저장소 안을 가리키면서 문서로 해석되지 않는 링크는 오류로 처리합니다.
  * 마크다운 원본에서는 디렉터리 링크가 동작하지만 사이트에는 그 경로가 없어 404 가 됩니다.
  * 양쪽에서 성립하지 않는 표기이므로 디렉터리는 링크 없이 `references/` 형태로 언급합니다.
- * 규칙의 원본은 docs/architectures/decoupled/angular/references/개발-환경.md 5.4절입니다.
+ * 규칙의 원본은 external/refarch-angular-springboot/docs/architecture/angular/references/개발-환경.md 5.4절입니다.
  */
 function resolveDocumentLink(href, fromPath) {
   if (/^[a-z]+:/i.test(href) || href.startsWith('#') || href.startsWith('/')) return href;

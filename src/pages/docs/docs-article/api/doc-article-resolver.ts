@@ -15,7 +15,7 @@ export interface DocArticle {
 
 /**
  * 문서 본문을 화면 진입 전에 받습니다.
- * fetch-then-render 원칙은 docs/architectures/decoupled/angular/references/로딩-전략.md 1절이 원본입니다.
+ * fetch-then-render 원칙은 external/refarch-angular-springboot/docs/architecture/angular/references/로딩-전략.md 1절이 원본입니다.
  *
  * 경로 조각에서 슬러그를 다시 조립합니다. 라우트가 와일드카드라 파라미터 하나로 오지 않으며,
  * 문서 계층의 깊이가 스택마다 다를 수 있어 깊이별 라우트를 두지 않습니다.

@@ -71,7 +71,7 @@ interface NavigationNode {
  *
  * 원래 설명은 다음과 같습니다. 골격은 `topbar` 이며 표면은 `bordered` 로 고정됩니다.
  *
- * 골격 종류와 스크롤 컨테이너의 대응은 docs/architectures/decoupled/angular/references/레이아웃.md 2절이 원본입니다.
+ * 골격 종류와 스크롤 컨테이너의 대응은 external/refarch-angular-springboot/docs/architecture/angular/references/레이아웃.md 2절이 원본입니다.
  * `topbar` 는 문서 전체가 스크롤 컨테이너이므로 헤더의 `sticky` 가 뷰포트를 기준으로 동작합니다.
  * 골격 전환을 제공하지 않으므로 3.1절의 템플릿 분기 구조는 아직 두지 않습니다.
  *

@@ -22,7 +22,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 아키텍처 문서의 원본은 refarch-angular-springboot 서브모듈에 있습니다.
+      # 빠뜨리면 external/ 이 빈 디렉터리로 체크아웃되고 문서 변환이 그것을 감지해
+      # 멈춥니다. 사이트가 문서 없이 배포되지는 않지만 배포 자체가 실패합니다.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-node@v4
         with:

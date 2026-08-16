@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/config';
 
 /**
  * 전체 화면 에러입니다. 앱셸이나 문서 네비게이션을 유지하지 않는 근거는
- * docs/architectures/decoupled/angular/decisions/0010-ADR-에러화면-전체화면-통일.md 에 있습니다.
+ * external/refarch-angular-springboot/docs/architecture/angular/decisions/0010-ADR-에러화면-전체화면-통일.md 에 있습니다.
  * 복구 액션을 화면 안에 두는 것이 그 결정의 전제입니다.
  */
 @Component({

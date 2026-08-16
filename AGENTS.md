@@ -4,9 +4,19 @@
 
 ## 1. 원본이 어디에 있는가
 
-**규칙과 그 근거의 원본은 `docs/`입니다.** 코드 주석과 본 문서는 그것을 가리키기만 합니다.
+**아키텍처 문서의 원본은 이 저장소가 아닙니다.** [refarch-angular-springboot](https://github.com/dev-goraebap/refarch-angular-springboot)이 원본을 소유하고 이 저장소는 그것을 서브모듈로 가져와 발행합니다. 원본을 그쪽에 두는 이유는 문서를 따르는 코드가 같은 저장소에 있어 규칙과 구현이 한 커밋에서 함께 움직이기 때문입니다.
 
-Angular 문서는 `docs/architectures/decoupled/angular/` 아래에 있습니다. 이하 `.../`로 줄입니다.
+| 대상 | 위치 | 고치는 저장소 |
+| :--- | :--- | :--- |
+| **아키텍처 문서** | `external/refarch-angular-springboot/docs/architecture/` | refarch-angular-springboot |
+| **에세이와 글** | `docs/architectures/index.md` · `docs/posts/` | 이 저장소 |
+| **발행 파이프라인과 화면** | `scripts/build-docs.mjs` · `src/` | 이 저장소 |
+
+> **중요: 서브모듈 안의 수정은 이 저장소의 커밋에 담기지 않습니다**
+>
+> `external/` 아래를 고쳤다면 참조 구현 저장소에서 커밋하고 푸시한 뒤, 이 저장소에서 서브모듈이 가리키는 커밋을 옮겨 함께 커밋합니다. 그 단계를 빠뜨리면 로컬에서는 반영된 것으로 보이지만 배포에는 옛 문서가 올라갑니다.
+
+Angular 문서는 `external/refarch-angular-springboot/docs/architecture/angular/` 아래에 있습니다. 이하 `.../`로 줄입니다.
 
 | 찾는 것 | 원본 |
 | :--- | :--- |
@@ -16,7 +26,7 @@ Angular 문서는 `docs/architectures/decoupled/angular/` 아래에 있습니다
 | 반응형과 적응형의 구분 | `.../references/적응형-UI.md` |
 | 문서 작성 규칙, 실측으로 확인한 사항 | `.../references/개발-환경.md` |
 | 결정과 기각한 대안 | `.../decisions/` |
-| 앱 분리와 계약, 배포 단위 | `docs/architectures/decoupled/index.md` |
+| 앱 분리와 계약, 배포 단위 | `external/refarch-angular-springboot/docs/architecture/index.md` |
 
 **층은 위에서 아래로 좁혀집니다.** 위 층의 결정이 아래 층의 전제이며 반대 방향은 없습니다. 스택 문서의 규칙을 바꾸기 전에 그것이 상위 층에서 내려온 전제인지 확인합니다.
 
@@ -30,9 +40,9 @@ npm run check     # 린트 · FSD 검사 · 빌드
 
 **이것을 통과하지 못한 상태로 완료를 보고하지 않습니다.** 세 가지를 한 번에 검사하며, FSD 위반은 Steiger가 빌드를 실패시킵니다.
 
-`docs/`의 마크다운을 고쳤다면 `npm run docs:build`가 규칙 위반을 잡아 멈춥니다. 실패 메시지에 파일명과 사유가 나오므로 그것을 읽고 고칩니다. 검증에 실패해도 기존 생성물은 보존되므로 개발 서버가 죽지는 않습니다.
+마크다운을 고쳤다면 `npm run docs:build`가 규칙 위반을 잡아 멈춥니다. 서브모듈의 문서도 같은 검사를 받으므로, 참조 구현 저장소에서 문서를 고친 뒤에는 이 저장소에서 이것을 돌려야 링크와 절 참조가 성립하는지 확인됩니다. 실패 메시지에 파일명과 사유가 나오므로 그것을 읽고 고칩니다. 검증에 실패해도 기존 생성물은 보존되므로 개발 서버가 죽지는 않습니다.
 
-`src/shared/markdown/generated/`는 빌드 산출물입니다. **직접 수정하지 않습니다.** 고쳐야 할 것은 `docs/`의 마크다운이거나 `scripts/build-docs.mjs`입니다.
+`src/shared/markdown/generated/`는 빌드 산출물입니다. **직접 수정하지 않습니다.** 고쳐야 할 것은 마크다운 원본이거나 `scripts/build-docs.mjs`입니다.
 
 ## 3. 검증하지 않은 것을 단정하지 않습니다
 
@@ -50,7 +60,7 @@ npm run check     # 린트 · FSD 검사 · 빌드
 
 ## 4. 결정을 남기는 곳
 
-설계 선택과 기각한 대안은 `docs/architectures/decoupled/angular/decisions/`에 ADR로 남깁니다. 채번 규칙과 대상 선정 기준은 [아키텍처 개요](docs/architectures/decoupled/angular/index.md) 9절이 원본입니다.
+설계 선택과 기각한 대안은 `external/refarch-angular-springboot/docs/architecture/angular/decisions/`에 ADR로 남깁니다. 채번 규칙과 대상 선정 기준은 `.../angular/index.md` 9절이 원본입니다. 이 파일들은 참조 구현 저장소 소유이므로 그쪽 저장소에서 커밋합니다.
 
 > **주의: 과거 ADR을 덮어쓰지 않습니다**
 >
